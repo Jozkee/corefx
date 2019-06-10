@@ -355,7 +355,7 @@ namespace System.Buffers
                 // Storing this in a local since it is used twice within InRange()
                 ulong startRange = (ulong)(((ReadOnlySequenceSegment<T>)startObject!).RunningIndex + startIndex);
                 if (!InRange(
-                    (ulong)(((ReadOnlySequenceSegment<T>)position.GetObject()!).RunningIndex + sliceStartIndex),
+                    (ulong)((position.GetObject() != null ? ((ReadOnlySequenceSegment<T>)position.GetObject()!).RunningIndex : 0) + sliceStartIndex),
                     startRange,
                     (ulong)(((ReadOnlySequenceSegment<T>)endObject!).RunningIndex + endIndex)))
                 {
@@ -578,7 +578,7 @@ namespace System.Buffers
 
             // In all other cases, value is valid, and we return true.
 
-            // Equivalent to: return (start <= value && value <= start)
+            // Equivalent to: return (start <= value && value <= end)
             return (value - start) <= (end - start);
         }
 

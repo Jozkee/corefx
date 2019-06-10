@@ -455,7 +455,7 @@ namespace System.Buffers
         public ReadOnlySequence<T> Slice(SequencePosition start)
         {
             BoundsCheck(start);
-            return SliceImpl(start);
+            return SliceImpl(start.Equals(default) ? Start : start);
         }
 
         /// <summary>

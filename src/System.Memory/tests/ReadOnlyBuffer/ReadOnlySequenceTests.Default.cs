@@ -122,6 +122,23 @@ namespace System.Memory.Tests
             Assert.Throws<ArgumentOutOfRangeException>("length", () => buffer.Slice(buffer.Start, -1L));
         }
 
+        [Fact]
+        public void Slice_DefaultSequencePosition()
+        {
+            string jsonString = "a";
+
+            ReadOnlyMemory<byte> dataMemory = Text.Encoding.UTF8.GetBytes(jsonString);
+
+            var firstSegment = new BufferSegment<byte>(dataMemory.Slice(0, 1));
+            ReadOnlyMemory<byte> secondMem = dataMemory.Slice(0, 0);
+            BufferSegment<byte> secondSegment = firstSegment.Append(secondMem);
+
+            // A two segment sequence where the second one is empty: [a]-> []
+            var sequence = new ReadOnlySequence<byte>(firstSegment, 0, secondSegment, secondMem.Length);
+            var slicedSequence = sequence.Slice(default(SequencePosition));
+            Assert.Equal(sequence, slicedSequence);
+        }
+
         #endregion
 
         #region Enumerator
