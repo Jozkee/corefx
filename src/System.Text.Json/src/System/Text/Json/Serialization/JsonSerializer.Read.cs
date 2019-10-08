@@ -40,18 +40,35 @@ namespace System.Text.Json
                         // Need more data
                         break;
                     }
-
                     JsonTokenType tokenType = reader.TokenType;
+
+                    //Isolate logic for Reference Handling.
+                    if (options.ReadReferenceHandling == ReferenceHandlingOnDeserialize.PreserveDuplicates && tokenType == JsonTokenType.PropertyName)
+                    {
+                        HandleMetadataProperty(options, ref reader, ref readStack);
+                    }
+
+                    //If no more metadata present, initialize the pending objects.
+                    if ((tokenType == JsonTokenType.PropertyName && readStack.Current.LastMetaProperty == MetadataPropertyName.Unknown) || tokenType == JsonTokenType.StartArray || tokenType == JsonTokenType.EndObject)
+                    {
+                        InitEnqueued(options, ref readStack, ref reader);
+                    }
 
                     if (JsonHelpers.IsInRangeInclusive(tokenType, JsonTokenType.String, JsonTokenType.False))
                     {
                         Debug.Assert(tokenType == JsonTokenType.String || tokenType == JsonTokenType.Number || tokenType == JsonTokenType.True || tokenType == JsonTokenType.False);
 
-                        HandleValue(tokenType, options, ref reader, ref readStack);
+                        if (!HandleMetadataValue(tokenType, ref reader, ref readStack))
+                        {
+                            HandleValue(tokenType, options, ref reader, ref readStack);
+                        }
                     }
                     else if (tokenType == JsonTokenType.PropertyName)
                     {
-                        HandlePropertyName(options, ref reader, ref readStack);
+                        if (readStack.Current.LastMetaProperty == MetadataPropertyName.Unknown) //issue here, need to not get in here when doing $ref.
+                        {
+                            HandlePropertyName(options, ref reader, ref readStack);
+                        }
                     }
                     else if (tokenType == JsonTokenType.StartObject)
                     {
@@ -70,16 +87,48 @@ namespace System.Text.Json
                         }
                         else if (readStack.Current.IsProcessingDictionary || readStack.Current.IsProcessingIDictionaryConstructible)
                         {
-                            HandleStartDictionary(options, ref reader, ref readStack);
+                            readStack.EnqueueInitTask(InitTaskType.Dictionary);
+                            //HandleStartDictionary(options, ref reader, ref readStack);
                         }
                         else
                         {
-                            HandleStartObject(options, ref readStack);
+                            readStack.EnqueueInitTask(InitTaskType.Object);
+                            //HandleStartObject(options, ref readStack);
                         }
                     }
                     else if (tokenType == JsonTokenType.EndObject)
                     {
-                        if (readStack.Current.Drain)
+                        if (readStack.Current.LastMetaProperty == MetadataPropertyName.Ref)
+                        {
+                            object refValue = readStack.GetReference(readStack.Current.MetadataId);
+                            readStack.Pop(); //an object reference has its own stack frame.
+
+                            if (refValue == null)
+                            {
+                                HandleNull(ref reader, ref readStack);
+                            }
+                            else
+                            {
+                                // Reference to the entire Enumerable/Dictionary.
+                                if (!readStack.Current.CollectionPropertyInitialized && (readStack.Current.IsEnumerableProperty || readStack.Current.IsDictionaryProperty))
+                                {
+                                    ApplyObjectToEnumerable(refValue, ref readStack, ref reader, setPropertyDirectly: true);
+                                    readStack.Current.EndProperty();
+                                }
+                                else //Reference to an object within the enumerable/dictionary.
+                                {
+                                    ApplyObjectToEnumerable(refValue, ref readStack, ref reader);
+                                }
+                            }
+                        }
+                        else if (readStack.Current.HandleWrappingBrace)
+                        {
+                            // Skip wrapping brace of reference-preserved array.
+                            //readStack.Current.RefValuesMetaProperty = MetadataPropertyName.Unknown;
+                            readStack.Current.HandleWrappingBrace = false;
+                            continue;
+                        }
+                        else if (readStack.Current.Drain)
                         {
                             readStack.Pop();
 
@@ -110,7 +159,10 @@ namespace System.Text.Json
                     }
                     else if (tokenType == JsonTokenType.EndArray)
                     {
+                        bool HandleWrappingBrace = readStack.Current.EnumerableMetadataId != null;
+                        readStack.Current.EnumerableMetadataId = null;
                         HandleEndArray(options, ref reader, ref readStack);
+                        readStack.Current.HandleWrappingBrace = HandleWrappingBrace;
                     }
                     else if (tokenType == JsonTokenType.Null)
                     {
@@ -202,6 +254,44 @@ namespace System.Text.Json
             }
 
             return propertyName;
+        }
+
+        private static void InitEnqueued(JsonSerializerOptions options, ref ReadStack state, ref Utf8JsonReader reader)
+        {
+            while (state.PendingTasksCount > 0)
+            {
+                InitTask task = state.DequeueInitTask();
+                if (task.Type == InitTaskType.Dictionary)
+                {
+                    HandleStartDictionary(options, ref reader, ref state);
+
+                    if (task.MetadataId != null)
+                    {
+                        if (state.Current.IsProcessingIDictionaryConstructible)
+                        {
+                            throw new JsonException("Cannot preserve references for types that are immutable.");
+                        }
+
+                        object value = state.Current.IsDictionaryProperty ?
+                            state.Current.JsonPropertyInfo.GetValueAsObject(state.Current.ReturnValue) :
+                            state.Current.ReturnValue;
+
+                        state.SetReference(task.MetadataId, value);
+                    }
+                }
+                else if (task.Type == InitTaskType.Object)
+                {
+                    HandleStartObject(options, ref state);
+
+                    //state.Current.MetadataId = task.MetadataId;
+                    if (task.MetadataId != null)
+                    {
+                        state.SetReference(task.MetadataId, state.Current.ReturnValue);
+                    }
+                }
+
+                //state.Current.LastMetaProperty = task.LastMetaProperty;
+            }
         }
     }
 }

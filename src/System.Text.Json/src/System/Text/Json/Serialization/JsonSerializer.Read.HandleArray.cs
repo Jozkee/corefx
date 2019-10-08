@@ -76,6 +76,14 @@ namespace System.Text.Json
                         // Primitive arrays being returned without object
                         state.Current.SetReturnValue(value);
                     }
+
+                    //if (state.Current.LastMetaProperty == MetadataPropertyName.Values)
+                    if (state.Current.EnumerableMetadataId != null)
+                    {
+                        //Add validation to prevent preserving Immutable collections.
+                        // Save the reference to this array.
+                        state.SetReference(state.Current.EnumerableMetadataId, value);
+                    }
                 }
             }
         }

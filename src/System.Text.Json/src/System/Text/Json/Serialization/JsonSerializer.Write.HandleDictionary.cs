@@ -17,11 +17,11 @@ namespace System.Text.Json
             Utf8JsonWriter writer,
             ref WriteStack state)
         {
+            IEnumerable enumerable = null;
             JsonPropertyInfo jsonPropertyInfo = state.Current.JsonPropertyInfo;
+
             if (state.Current.CollectionEnumerator == null)
             {
-                IEnumerable enumerable;
-
                 enumerable = (IEnumerable)jsonPropertyInfo.GetValueAsObject(state.Current.CurrentValue);
                 if (enumerable == null)
                 {
@@ -41,6 +41,23 @@ namespace System.Text.Json
                     return true;
                 }
 
+                ResolvedReferenceHandling handling = HandleReference(options, ref state, enumerable);
+                int? preservedRefId = null;
+                bool writeReferenceObject = false;
+
+                if (handling == ResolvedReferenceHandling.Ignore) //Ignore will no longer be used, probably.
+                {
+                    //Reference loop found, do not write anything and pop the frame from the stack.
+                    return WriteEndDictionary(ref state, enumerable);
+                }
+
+                if (handling == ResolvedReferenceHandling.Preserve) //I should handle WriteObjectOrArrayStart on my own since I need to wrap arrays in an object.
+                {
+                    writeReferenceObject = ShouldWritePreservedReference(out int id, ref state, enumerable);
+
+                    preservedRefId = id;
+                }
+
                 if (enumerable is IDictionary dictionary)
                 {
                     state.Current.CollectionEnumerator = dictionary.GetEnumerator();
@@ -50,9 +67,10 @@ namespace System.Text.Json
                     state.Current.CollectionEnumerator = enumerable.GetEnumerator();
                 }
 
+                //This should go above GetEnumerator, nevermind, I need the value as in CollectionEnumerator
                 if (state.Current.ExtensionDataStatus != ExtensionDataWriteStatus.Writing)
                 {
-                    state.Current.WriteObjectOrArrayStart(ClassType.Dictionary, writer, options);
+                    state.Current.WriteObjectOrArrayStart(ClassType.Dictionary, writer, options, writeReferenceObject: writeReferenceObject, preservedRefId: preservedRefId);
                 }
             }
 
@@ -95,12 +113,18 @@ namespace System.Text.Json
                 writer.WriteEndObject();
             }
 
+            return WriteEndDictionary(ref state, enumerable);
+        }
+
+        private static bool WriteEndDictionary(ref WriteStack state, IEnumerable enumerable)
+        {
             if (state.Current.PopStackOnEndCollection)
             {
                 state.Pop();
             }
             else
             {
+                state.PopStackReference(enumerable ?? (IEnumerable)state.Current.JsonPropertyInfo.GetValueAsObject(state.Current.CurrentValue));
                 state.Current.EndDictionary();
             }
 

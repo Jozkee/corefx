@@ -3,6 +3,7 @@
     <Configurations>netcoreapp-Debug;netcoreapp-Release;netfx-Debug;netfx-Release;uap-Windows_NT-Debug;uap-Windows_NT-Release</Configurations>
     <DefineConstants Condition="'$(TargetGroup)'!='netfx'">$(DefineConstants);BUILDING_INBOX_LIBRARY</DefineConstants>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <TargetFramework>netcoreapp3.0</TargetFramework>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="$(CommonTestPath)\System\IO\WrappedMemoryStream.cs">
@@ -31,6 +32,9 @@
     <Compile Include="NewtonsoftTests\EnumConverterTests.cs" />
     <Compile Include="NewtonsoftTests\ImmutableCollectionsTests.cs" />
     <Compile Include="NewtonsoftTests\JsonSerializerTests.cs" />
+    <Compile Include="ReferenceHandlingBenchmark.cs" />
+    <Compile Include="ReferenceHandlingTests.Deserialize.cs" />
+    <Compile Include="ReferenceHandlingTests.Serialize.cs" />
     <Compile Include="Serialization\Array.ReadTests.cs" />
     <Compile Include="Serialization\Array.WriteTests.cs" />
     <Compile Include="Serialization\CacheTests.cs" />

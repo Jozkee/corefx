@@ -16,10 +16,11 @@ namespace System.Text.Json
             ref WriteStack state)
         {
             Debug.Assert(state.Current.JsonPropertyInfo.ClassType == ClassType.Enumerable);
+            IEnumerable enumerable = null;
 
             if (state.Current.CollectionEnumerator == null)
             {
-                IEnumerable enumerable = (IEnumerable)state.Current.JsonPropertyInfo.GetValueAsObject(state.Current.CurrentValue);
+                enumerable = (IEnumerable)state.Current.JsonPropertyInfo.GetValueAsObject(state.Current.CurrentValue);
 
                 if (enumerable == null)
                 {
@@ -41,7 +42,29 @@ namespace System.Text.Json
 
                 state.Current.CollectionEnumerator = enumerable.GetEnumerator();
 
-                state.Current.WriteObjectOrArrayStart(ClassType.Enumerable, writer, options);
+                ResolvedReferenceHandling handling = HandleReference(options, ref state, enumerable);
+                int? preservedRefId = null;
+                bool writeReferenceObject = false;
+
+                if (handling == ResolvedReferenceHandling.Ignore)
+                {
+                    //Reference loop found and ignore handling specified, do not write anything and pop the frame from the stack in case the array has an independant frame.
+                    return WriteEndArray(ref state, enumerable);
+                }
+
+                if (handling == ResolvedReferenceHandling.Preserve)
+                {
+                    writeReferenceObject = ShouldWritePreservedReference(out int id, ref state, enumerable);
+                    preservedRefId = id;
+                }
+
+                state.Current.WriteObjectOrArrayStart(ClassType.Enumerable, writer, options, writeReferenceObject: writeReferenceObject, preservedRefId: preservedRefId);
+
+                if (writeReferenceObject)
+                {
+                    // We don't need to enumerate, this is a reference and was already wrote in WriteObjectOrArrayStart.
+                    return WriteEndArray(ref state, enumerable);
+                }
             }
 
             if (state.Current.CollectionEnumerator.MoveNext())
@@ -75,12 +98,25 @@ namespace System.Text.Json
             // We are done enumerating.
             writer.WriteEndArray();
 
+            if (state.Current.WriteWrappingBraceOnEndCollection)
+            {
+                writer.WriteEndObject();
+            }
+
+            return WriteEndArray(ref state, enumerable);
+        }
+
+        private static bool WriteEndArray(ref WriteStack state, IEnumerable enumerable)
+        {
             if (state.Current.PopStackOnEndCollection)
             {
                 state.Pop();
             }
             else
             {
+                //Not sure if this is the best way to handle an array/dictionary with more than 1 element;
+                //see ObjectWithDuplicatedListWithValues.
+                state.PopStackReference(enumerable ?? (IEnumerable)state.Current.JsonPropertyInfo.GetValueAsObject(state.Current.CurrentValue));
                 state.Current.EndArray();
             }
 

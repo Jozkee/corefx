@@ -84,6 +84,21 @@ namespace System.Text.Json
         Skip = (byte)1,
         Allow = (byte)2,
     }
+
+    public enum ReferenceHandling
+    {
+        Error = 0,
+        Ignore = 1,
+        Preserve = 2,
+        Serialize = 3,
+    }
+
+    public enum ReferenceHandlingOnDeserialize
+    {
+        IgnoreMetadata,
+        PreserveDuplicates,
+    }
+
     public sealed partial class JsonDocument : System.IDisposable
     {
         internal JsonDocument() { }
@@ -460,6 +475,8 @@ namespace System.Text.Json
         public System.Text.Json.JsonCommentHandling ReadCommentHandling { get { throw null; } set { } }
         public bool WriteIndented { get { throw null; } set { } }
         public System.Text.Json.Serialization.JsonConverter GetConverter(System.Type typeToConvert) { throw null; }
+        public System.Text.Json.ReferenceHandling ReferenceHandling { get { throw null; } set { } }
+        public System.Text.Json.ReferenceHandlingOnDeserialize ReadReferenceHandling { get { throw null; } set { } }
     }
     public sealed partial class JsonString : System.Text.Json.JsonNode, System.IEquatable<System.Text.Json.JsonString>
     {
@@ -715,6 +732,10 @@ namespace System.Text.Json
         public void WriteStringValue(string value) { }
         public void WriteStringValue(System.Text.Json.JsonEncodedText value) { }
     }
+    public class JsonTestException : JsonException
+    {
+        internal JsonTestException(string message) : base(message) { }
+    }
 }
 namespace System.Text.Json.Serialization
 {
@@ -769,5 +790,14 @@ namespace System.Text.Json.Serialization
         public JsonStringEnumConverter(System.Text.Json.JsonNamingPolicy namingPolicy = null, bool allowIntegerValues = true) { }
         public override bool CanConvert(System.Type typeToConvert) { throw null; }
         public override System.Text.Json.Serialization.JsonConverter CreateConverter(System.Type typeToConvert, System.Text.Json.JsonSerializerOptions options) { throw null; }
+    }
+    [AttributeUsage(AttributeTargets.Property | AttributeTargets.Class, AllowMultiple = false)]
+    public sealed class JsonReferenceHandlingAttribute : JsonAttribute
+    {
+        public JsonReferenceHandlingAttribute(ReferenceHandling handling)
+        {
+            Handling = handling;
+        }
+        public ReferenceHandling Handling { get; }
     }
 }

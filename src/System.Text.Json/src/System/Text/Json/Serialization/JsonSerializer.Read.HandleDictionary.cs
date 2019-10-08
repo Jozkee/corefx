@@ -28,7 +28,7 @@ namespace System.Text.Json
                 state.Push();
                 state.Current.JsonClassInfo = jsonPropertyInfo.ElementClassInfo;
                 state.Current.InitializeJsonPropertyInfo();
-                state.Current.CollectionPropertyInitialized = true;
+                state.Current.CollectionPropertyInitialized = true; //NOTE: Should this be initialized also for nested objects?
 
                 ClassType classType = state.Current.JsonClassInfo.ClassType;
                 if (classType == ClassType.Value &&

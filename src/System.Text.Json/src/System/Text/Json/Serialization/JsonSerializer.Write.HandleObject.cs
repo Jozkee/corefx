@@ -26,8 +26,28 @@ namespace System.Text.Json
                     state.Current.WriteObjectOrArrayStart(ClassType.Object, writer, options, writeNull: true);
                     return WriteEndObject(ref state);
                 }
+                ResolvedReferenceHandling handling = HandleReference(options, ref state);
+                int? preservedRefId = null;
+                bool writeReferenceObject = false;
 
-                state.Current.WriteObjectOrArrayStart(ClassType.Object, writer, options);
+                if (handling == ResolvedReferenceHandling.Ignore)
+                {
+                    //Reference loop found, do not write anything and pop the frame from the stack.
+                    return WriteEndObject(ref state);
+                }
+                else if (handling == ResolvedReferenceHandling.Preserve)
+                {
+                    writeReferenceObject = ShouldWritePreservedReference(out int id, ref state);
+                    preservedRefId = id;
+                }
+
+                state.Current.WriteObjectOrArrayStart(ClassType.Object, writer, options, writeReferenceObject: writeReferenceObject, preservedRefId: preservedRefId);
+
+                if (writeReferenceObject)
+                {
+                    return WriteEndObject(ref state);
+                }
+                //state.Current.WriteObjectOrArrayStart(ClassType.Object, writer, options);
                 state.Current.PropertyEnumeratorActive = true;
                 state.Current.MoveToNextProperty = true;
             }
@@ -59,10 +79,10 @@ namespace System.Text.Json
             {
                 state.Pop();
             }
-            else
-            {
-                state.Current.EndObject();
-            }
+            //else
+            //{
+            //    state.Current.EndObject();
+            //}
 
             return true;
         }

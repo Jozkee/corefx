@@ -12,6 +12,7 @@
     <!-- https://github.com/dotnet/arcade/blob/ea6addfdc65e5df1b2c036f11614a5f922e36267/src/Microsoft.DotNet.Arcade.Sdk/tools/ProjectDefaults.props#L90 -->
     <!-- For this project, we want warnings if there are public APIs/types without properly formatted XML comments (particularly CS1591). -->
     <NoWarn />
+    <TargetFramework>netcoreapp3.0</TargetFramework>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="System\Text\Json\BitStack.cs" />
@@ -22,6 +23,11 @@
     <Compile Include="System\Text\Json\JsonHelpers.cs" />
     <Compile Include="System\Text\Json\JsonHelpers.Date.cs" />
     <Compile Include="System\Text\Json\JsonTokenType.cs" />
+    <Compile Include="System\Text\Json\Serialization\JsonReferenceHandlingAttribute.cs" />
+    <Compile Include="System\Text\Json\Serialization\JsonSerializer.Read.HandleReference.cs" />
+    <Compile Include="System\Text\Json\Serialization\JsonSerializer.Write.HandleReference.cs" />
+    <Compile Include="System\Text\Json\Serialization\ReferenceHandlingOnDeserialize.cs" />
+    <Compile Include="System\Text\Json\Serialization\ReferenceHandling.cs" />
     <Compile Include="System\Text\Json\ThrowHelper.cs" />
     <Compile Include="System\Text\Json\ThrowHelper.Serialization.cs" />
     <Compile Include="System\Text\Json\Document\JsonDocument.cs" />

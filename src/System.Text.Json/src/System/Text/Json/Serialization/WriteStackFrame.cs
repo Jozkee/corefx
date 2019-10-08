@@ -29,6 +29,9 @@ namespace System.Text.Json
         public bool PopStackOnEndObject;
         public bool StartObjectWritten;
         public bool MoveToNextProperty;
+        //For preservation object wrapper.
+        public bool WriteWrappingBraceOnEndCollection;
+        public bool KeepReferenceInSet;
 
         // The current property.
         public bool PropertyEnumeratorActive;
@@ -50,40 +53,63 @@ namespace System.Text.Json
             }
         }
 
-        public void WriteObjectOrArrayStart(ClassType classType, Utf8JsonWriter writer, JsonSerializerOptions options, bool writeNull = false)
+        public void WriteObjectOrArrayStart(ClassType classType, Utf8JsonWriter writer, JsonSerializerOptions options, bool writeNull = false, bool writeReferenceObject = false, int? preservedRefId = null)
         {
             if (JsonPropertyInfo?.EscapedName.HasValue == true)
             {
-                WriteObjectOrArrayStart(classType, JsonPropertyInfo.EscapedName.Value, writer, writeNull);
+                WriteObjectOrArrayStart(classType, JsonPropertyInfo.EscapedName.Value, writer, writeNull, writeReferenceObject, preservedRefId);
             }
             else if (KeyName != null)
             {
                 JsonEncodedText propertyName = JsonEncodedText.Encode(KeyName, options.Encoder);
-                WriteObjectOrArrayStart(classType, propertyName, writer, writeNull);
+                WriteObjectOrArrayStart(classType, propertyName, writer, writeNull, writeReferenceObject, preservedRefId);
             }
             else
             {
                 Debug.Assert(writeNull == false);
 
                 // Write start without a property name.
-                if (classType == ClassType.Object || classType == ClassType.Dictionary || classType == ClassType.IDictionaryConstructible)
+                if (writeReferenceObject)
                 {
                     writer.WriteStartObject();
+                    writer.WriteString("$ref", preservedRefId.ToString());
+                    writer.WriteEndObject();
+                }
+                else if (classType == ClassType.Object || classType == ClassType.Dictionary || classType == ClassType.IDictionaryConstructible)
+                {
+                    writer.WriteStartObject();
+                    if (preservedRefId != null)
+                    {
+                        writer.WriteString("$id", preservedRefId.ToString());
+                    }
                     StartObjectWritten = true;
                 }
                 else
                 {
                     Debug.Assert(classType == ClassType.Enumerable);
+                    if (preservedRefId != null) // wrap array into an object with $id and $values metadtaa properties
+                    {
+                        writer.WriteStartObject();
+                        writer.WriteString("$id", preservedRefId.ToString()); //it can be WriteString.
+                        writer.WritePropertyName("$values");
+                        WriteWrappingBraceOnEndCollection = true;
+                    }
                     writer.WriteStartArray();
                 }
             }
         }
 
-        private void WriteObjectOrArrayStart(ClassType classType, JsonEncodedText propertyName, Utf8JsonWriter writer, bool writeNull)
+        private void WriteObjectOrArrayStart(ClassType classType, JsonEncodedText propertyName, Utf8JsonWriter writer, bool writeNull, bool writeReferenceObject, int? preservedRefId)
         {
             if (writeNull)
             {
                 writer.WriteNull(propertyName);
+            }
+            else if (writeReferenceObject) //is a reference? write { "$ref": "1" } regardless of the type.
+            {
+                writer.WriteStartObject(propertyName);
+                writer.WriteString("$ref", preservedRefId.ToString());
+                writer.WriteEndObject();
             }
             else if (classType == ClassType.Object ||
                 classType == ClassType.Dictionary ||
@@ -91,11 +117,26 @@ namespace System.Text.Json
             {
                 writer.WriteStartObject(propertyName);
                 StartObjectWritten = true;
+                if (preservedRefId != null)
+                {
+                    writer.WriteString("$id", preservedRefId.ToString());
+                }
             }
             else
             {
                 Debug.Assert(classType == ClassType.Enumerable);
-                writer.WriteStartArray(propertyName);
+                if (preservedRefId != null) // new reference? wrap array into an object with $id and $values metadtaa properties
+                {
+                    writer.WriteStartObject(propertyName);
+                    writer.WriteString("$id", preservedRefId.ToString()); //it can be WriteString.
+                    writer.WritePropertyName("$values");
+                    writer.WriteStartArray();
+                    WriteWrappingBraceOnEndCollection = true;
+                }
+                else
+                {
+                    writer.WriteStartArray(propertyName);
+                }
             }
         }
 

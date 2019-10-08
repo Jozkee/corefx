@@ -395,5 +395,14 @@ namespace System.Text.Json
                 ThrowHelper.ThrowInvalidOperationException_SerializerOptionsImmutable();
             }
         }
+
+        /// <summary>
+        /// Defines how reference loops are treated when writing the JSON.
+        /// </summary>
+        public ReferenceHandling ReferenceHandling { get; set; }
+        /// <summary>
+        /// Defines how metadata properties used to handle duplicate references are treated when reading the JSON payload.
+        /// </summary>
+        public ReferenceHandlingOnDeserialize ReadReferenceHandling { get; set; }
     }
 }
