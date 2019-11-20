@@ -14,7 +14,15 @@ namespace System.Text.Json
             ReadStack state = default;
             state.Current.Initialize(returnType, options);
 
-            ReadCore(options, ref reader, ref state);
+            if (options.ReferenceHandlingOnDeserialize == ReferenceHandlingOnDeserialize.PreserveDuplicates)
+            {
+                ReadCoreRef(options, ref reader, ref state);
+
+            }
+            else
+            {
+                ReadCore(options, ref reader, ref state);
+            }
 
             return state.Current.ReturnValue;
         }

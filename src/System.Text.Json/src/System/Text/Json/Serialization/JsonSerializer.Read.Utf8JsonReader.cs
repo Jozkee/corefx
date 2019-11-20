@@ -111,6 +111,7 @@ namespace System.Text.Json
             ReadStack readStack = default;
             readStack.Current.Initialize(returnType, options);
 
+
             ReadValueCore(options, ref reader, ref readStack);
 
             return readStack.Current.ReturnValue;
@@ -301,7 +302,14 @@ namespace System.Text.Json
 
                 var newReader = new Utf8JsonReader(rentedSpan, isFinalBlock: true, state: default);
 
-                ReadCore(options, ref newReader, ref readStack);
+                if (options.ReferenceHandlingOnDeserialize == ReferenceHandlingOnDeserialize.PreserveDuplicates)
+                {
+                    ReadCoreRef(options, ref newReader, ref readStack);
+                }
+                else
+                {
+                    ReadCore(options, ref newReader, ref readStack);
+                }
 
                 // The reader should have thrown if we have remaining bytes.
                 Debug.Assert(newReader.BytesConsumed == length);

@@ -19,6 +19,7 @@ namespace System.Text.Json
         private static readonly JsonDictionaryConverter s_jsonImmutableDictionaryConverter = new DefaultImmutableDictionaryConverter();
 
         public static readonly JsonPropertyInfo s_missingProperty = GetMissingProperty();
+        public static readonly JsonPropertyInfo s_metadataProperty = GetMetadataProperty();
 
         private JsonClassInfo _elementClassInfo;
         private JsonClassInfo _runtimeClassInfo;
@@ -38,6 +39,15 @@ namespace System.Text.Json
             info.IsPropertyPolicy = false;
             info.ShouldDeserialize = false;
             info.ShouldSerialize = false;
+            return info;
+        }
+
+        public static JsonPropertyInfo GetMetadataProperty()
+        {
+            JsonPropertyInfo info = new JsonPropertyInfoNotNullable<object, object, object, object>();
+            info.ShouldDeserialize = true;
+            info.IsMetadata = true;
+
             return info;
         }
 
@@ -331,6 +341,8 @@ namespace System.Text.Json
         public bool IgnoreNullValues { get; private set; }
 
         public bool IsPropertyPolicy { get; protected set; }
+
+        public bool IsMetadata { get; set; }
 
         // The name from a Json value. This is cached for performance on first deserialize.
         public byte[] JsonPropertyName { get; set; }

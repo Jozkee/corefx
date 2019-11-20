@@ -27,6 +27,9 @@
     <Compile Include="System\Text\Json\Serialization\ReferenceHandlingStrategy.cs" />
     <Compile Include="System\Text\Json\Serialization\ReferenceResolver.cs" />
     <Compile Include="System\Text\Json\Serialization\ResolvedReferenceHandling.cs" />
+    <Compile Include="System\Text\Json\Serialization\JsonSerializer.Read.HandleMetadata.cs" />
+    <Compile Include="System\Text\Json\Serialization\JsonSerializer.Read.HandleReferences.cs" />
+    <Compile Include="System\Text\Json\Serialization\ReferenceHandlingOnDeserialize.cs" />
     <Compile Include="System\Text\Json\ThrowHelper.cs" />
     <Compile Include="System\Text\Json\ThrowHelper.Serialization.cs" />
     <Compile Include="System\Text\Json\Document\JsonDocument.cs" />
