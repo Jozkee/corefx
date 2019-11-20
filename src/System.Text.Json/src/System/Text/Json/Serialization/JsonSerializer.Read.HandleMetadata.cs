@@ -75,7 +75,7 @@ namespace System.Text.Json
 
         private static void HandleReference(JsonSerializerOptions options, ref ReadStack state, ref Utf8JsonReader reader)
         {
-            object referenceValue = state.GetReference(state.Current.ReferenceId);
+            object referenceValue = state.ResolveReference(state.Current.ReferenceId);
             if (state.Current.IsProcessingProperty(ClassType.Dictionary))
             {
                 ApplyObjectToEnumerable(referenceValue, ref state, setPropertyDirectly: true);
