@@ -952,7 +952,7 @@ namespace System.Text.Json.Tests
             JsonException ex = Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<List<Employee>>(json, _deserializeOptions));
 
             Assert.Equal("$[1].$id", ex.Path);
-            Assert.Equal("Duplicated id found while preserving reference.", ex.Message);
+            Assert.Equal("Duplicated $id \"1\" found while preserving reference.", ex.Message);
         }
         #endregion
 

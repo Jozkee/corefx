@@ -15,7 +15,7 @@ namespace System.Text.Json
             }
             else if (_preservedReferences.TryGetByKey(key, out _))
             {
-                throw new JsonException($"key {key} is already used for another object.");
+                throw new JsonException($"Duplicated $id \"{key}\" found while preserving reference.");
             }
 
             _preservedReferences.Add(key, value);
