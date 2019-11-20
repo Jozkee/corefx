@@ -9,6 +9,12 @@ namespace System.Text.Json
 {
     internal class JsonPreservedReference<T>
     {
+        public JsonPreservedReference()
+        {
+            Values = default;
+            T copy = Values;
+        }
+
         [JsonPropertyName("$values")]
         public T Values { get; set; }
     }
@@ -25,6 +31,9 @@ namespace System.Text.Json
             if (state.Current.IsProcessingEnumerable())
             {
                 // A nested object within an enumerable (non-dictionary).
+
+                //TODO dummy code to force linking of Values
+                new JsonPreservedReference<object>();
 
                 if (!state.Current.CollectionPropertyInitialized)
                 {
