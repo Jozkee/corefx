@@ -25,8 +25,7 @@ namespace System.Text.Json
         private JsonNamingPolicy _jsonPropertyNamingPolicy;
         private JsonCommentHandling _readCommentHandling;
         private JavaScriptEncoder _encoder;
-        private ReferenceHandlingOnDeserialize _referenceHandlingOnDeserialize;
-        private ReferenceHandlingOnSerialize _referenceHandlingOnSerialize;
+        private ReferenceHandling _referenceHandling;
         private int _defaultBufferSize = BufferSizeDefault;
         private int _maxDepth;
         private bool _allowTrailingCommas;
@@ -304,20 +303,20 @@ namespace System.Text.Json
         }
 
         /// <summary>
-        /// Defines how references are treated when writing the JSON, this is convenient to deal with circularity.
+        /// Defines how references are treated when writing/reading JSON, this is convenient to deal with circularity.
         /// </summary>
-        public ReferenceHandlingOnSerialize ReferenceHandlingOnSerialize
+        public ReferenceHandling ReferenceHandling
         {
-            get => _referenceHandlingOnSerialize;
+            get => _referenceHandling;
             set
             {
                 VerifyMutable();
 
-                if ((uint)value > (uint)ReferenceHandlingOnSerialize.Preserve)
+                if ((uint)value > (uint)ReferenceHandling.Preserve)
                 {
                     throw new ArgumentOutOfRangeException(nameof(value));
                 }
-                _referenceHandlingOnSerialize = value;
+                _referenceHandling = value;
             }
         }
 
@@ -397,24 +396,6 @@ namespace System.Text.Json
             if (_haveTypesBeenCreated)
             {
                 ThrowHelper.ThrowInvalidOperationException_SerializerOptionsImmutable();
-            }
-        }
-
-        /// <summary>
-        /// Defines how metadata properties used to handle duplicate references are treated when reading the JSON payload.
-        /// </summary>
-        public ReferenceHandlingOnDeserialize ReferenceHandlingOnDeserialize
-        {
-            get => _referenceHandlingOnDeserialize;
-            set
-            {
-                VerifyMutable();
-
-                if (value < 0)
-                {
-                    throw new ArgumentOutOfRangeException(nameof(value));
-                }
-                _referenceHandlingOnDeserialize = value;
             }
         }
     }

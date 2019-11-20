@@ -85,9 +85,9 @@ namespace System.Text.Json
         Allow = (byte)2,
     }
 
-    public enum ReferenceHandlingOnSerialize
+    public enum ReferenceHandling
     {
-        Error = 0,
+        Default = 0,
         Ignore = 1,
         Preserve = 2,
     }
@@ -466,10 +466,9 @@ namespace System.Text.Json
         public bool PropertyNameCaseInsensitive { get { throw null; } set { } }
         public System.Text.Json.JsonNamingPolicy PropertyNamingPolicy { get { throw null; } set { } }
         public System.Text.Json.JsonCommentHandling ReadCommentHandling { get { throw null; } set { } }
-        public System.Text.Json.ReferenceHandlingOnSerialize ReferenceHandlingOnSerialize { get { throw null; } set { } }
+        public System.Text.Json.ReferenceHandling ReferenceHandling { get { throw null; } set { } }
         public bool WriteIndented { get { throw null; } set { } }
         public System.Text.Json.Serialization.JsonConverter GetConverter(System.Type typeToConvert) { throw null; }
-        public System.Text.Json.ReferenceHandlingOnDeserialize ReferenceHandlingOnDeserialize { get { throw null; } set { } }
     }
     public sealed partial class JsonString : System.Text.Json.JsonNode, System.IEquatable<System.Text.Json.JsonString>
     {
@@ -529,11 +528,7 @@ namespace System.Text.Json
         public bool Indented { get { throw null; } set { } }
         public bool SkipValidation { get { throw null; } set { } }
     }
-    public enum ReferenceHandlingOnDeserialize
-    {
-        IgnoreMetadata,
-        PreserveDuplicates,
-    }
+
     public ref partial struct Utf8JsonReader
     {
         private object _dummy;

@@ -216,7 +216,7 @@ namespace System.Text.Json
             readStack.ReadAhead = !isFinalBlock;
             readStack.BytesConsumed = 0;
 
-            if (options.ReferenceHandlingOnDeserialize == ReferenceHandlingOnDeserialize.PreserveDuplicates)
+            if (options.ReferenceHandling == ReferenceHandling.Preserve)
             {
                 ReadCoreRef(
                     options,

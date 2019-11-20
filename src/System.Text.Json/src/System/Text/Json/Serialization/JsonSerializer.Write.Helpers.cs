@@ -144,13 +144,13 @@ namespace System.Text.Json
 
         private static void SetReferenceHandlingDelegates(JsonSerializerOptions options)
         {
-            if (options.ReferenceHandlingOnSerialize == ReferenceHandlingOnSerialize.Preserve)
+            if (options.ReferenceHandling == ReferenceHandling.Preserve)
             {
                 options.WriteStart = WriteReferenceObjectOrArrayStart;
                 options.HandleReference = PreserveReferencesStrategy;
                 options.PopReference = (ref WriteStack _, bool __) => { }; //enpty delegate, we dont need to use the reference stack when optiong-in for preserve.
             }
-            else if (options.ReferenceHandlingOnSerialize == ReferenceHandlingOnSerialize.Ignore)
+            else if (options.ReferenceHandling == ReferenceHandling.Ignore)
             {
                 options.WriteStart = WriteObjectOrArrayStart;
                 options.HandleReference = IgnoreReferencesStrategy;

@@ -11,7 +11,7 @@ namespace System.Text.Json.Tests
 {
     public static partial class ReferenceHandlingTests
     {
-        private static JsonSerializerOptions _deserializeOptions = new JsonSerializerOptions { ReferenceHandlingOnDeserialize = ReferenceHandlingOnDeserialize.PreserveDuplicates };
+        private static JsonSerializerOptions _deserializeOptions = new JsonSerializerOptions { ReferenceHandling = ReferenceHandling.Preserve };
 
         private class EmployeeWithContacts
         {
@@ -101,7 +101,7 @@ namespace System.Text.Json.Tests
             Assert.Same(employee.Subordinates, employee.Subordinates[0].Subordinates);
         }
 
-        [Fact] //Employee Dictionary as a property and then use reference to itself on nested Employee.MissingMethodException: Method not found: 'Void System.Text.Json.JsonSerializerOptions.set_ReferenceHandlingOnDeserialize(System.Text.Json.ReferenceHandlingOnDeserialize)'.
+        [Fact] //Employee Dictionary as a property and then use reference to itself on nested Employee.MissingMethodException: Method not found: 'Void System.Text.Json.JsonSerializerOptions.set_ReferenceHandling(System.Text.Json.ReferenceHandling)'.
 
         public static void ObjectWithDictionaryReferenceDeeper()
         {
@@ -411,7 +411,7 @@ namespace System.Text.Json.Tests
             }";
 
             var options = new JsonSerializerOptions();
-            options.ReferenceHandlingOnDeserialize = ReferenceHandlingOnDeserialize.PreserveDuplicates;
+            options.ReferenceHandling = ReferenceHandling.Preserve;
             options.Converters.Add(new MyConverter());
 
             Employee angela = JsonSerializer.Deserialize<Employee>(json, options);
@@ -548,7 +548,7 @@ namespace System.Text.Json.Tests
         }
 
         #region IgnoreNullValues
-        private static JsonSerializerOptions _deserializeMetadataIgnoreNull = new JsonSerializerOptions { ReferenceHandlingOnDeserialize = ReferenceHandlingOnDeserialize.PreserveDuplicates, IgnoreNullValues = true };
+        private static JsonSerializerOptions _deserializeMetadataIgnoreNull = new JsonSerializerOptions { ReferenceHandling = ReferenceHandling.Preserve, IgnoreNullValues = true };
 
         [Fact] //TODO
         public static void ObjectPropertyIgnoreNull()
@@ -605,7 +605,7 @@ namespace System.Text.Json.Tests
         [Fact]
         public static void VerifyReferenceHandlingInJsonSerializerOptions()
         {
-            Assert.Throws<ArgumentOutOfRangeException>(() => new JsonSerializerOptions { ReferenceHandlingOnDeserialize = (ReferenceHandlingOnDeserialize)(-1) });
+            Assert.Throws<ArgumentOutOfRangeException>(() => new JsonSerializerOptions { ReferenceHandling = (ReferenceHandling)(-1) });
         }
 
         [Fact]

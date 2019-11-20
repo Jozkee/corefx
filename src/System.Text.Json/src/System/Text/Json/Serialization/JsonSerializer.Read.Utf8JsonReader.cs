@@ -302,7 +302,7 @@ namespace System.Text.Json
 
                 var newReader = new Utf8JsonReader(rentedSpan, isFinalBlock: true, state: default);
 
-                if (options.ReferenceHandlingOnDeserialize == ReferenceHandlingOnDeserialize.PreserveDuplicates)
+                if (options.ReferenceHandling == ReferenceHandling.Preserve)
                 {
                     ReadCoreRef(options, ref newReader, ref readStack);
                 }
