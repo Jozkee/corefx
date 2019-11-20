@@ -21,21 +21,6 @@ namespace System.Text.Json.Tests
             public Dictionary<string, EmployeeWithContacts> Contacts { get; set; }
         }
 
-        private class Employee
-        {
-            public static readonly List<string> SubordinatesDefault = new List<string> { "Bob" }; //how can I make these immutables?
-            public static readonly Dictionary<string, string> ContactsDefault = new Dictionary<string, string>() { { "Bob", "555-5555" } };
-
-            public string Name { get; set; }
-            public Employee Manager { get; set; }
-            public List<Employee> Subordinates { get; set; }
-            public Dictionary<string, Employee> Contacts { get; set; }
-
-            public List<string> SubordinatesString { get; set; } = SubordinatesDefault;
-
-            public Dictionary<string, string> ContactsString { get; set; } = ContactsDefault;
-        }
-
         #region Root Object
         [Fact] //Employee list as a property and then use reference to itself on nested Employee.
         public static void ObjectReferenceLoop()
