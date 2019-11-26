@@ -159,7 +159,7 @@ The next table show the combination of Newtonsoft's **ReferenceLoopHandling** an
 Notes: 
 * Newtonsoft's `MetadataPropertyHandling.ReadAhead` will not be supported in this first effort.
 * `Objects` and `Arrays` granularity may apply to both, Serialization and Deserialization.
-* If we enable support of overlapping both `ReferenceLoopHandling` and `PreserveReferencesHandling`, we then need to add an option to force serialization (`ReferenceLoopHandlingSerialize`).
+* (overlap) means that Preserve References will co-exist with Reference Loop Handling; see [example](#using-a-custom-referencehandling-to-show-possible-future-usage).
 
 
 # Examples
