@@ -1,8 +1,8 @@
 # Motivation
 
-Currently there is no mechanism to prevent infinite looping in circular objects nor to preserve references when using System.Text.Json.
+Currently there is no mechanism to prevent infinite looping in circular objects (while serializing) nor to preserve references that round-trip when using System.Text.Json.
 
-Community is heavily requesting this feature since is consider by many as a very common scenario, specially when serializing POCOs that came from an ORM Framework, such as Entity Framework; even though JSON specifiacation does not support reference loops by default. Therefore this will be shipped as an opt-in feature.
+This is a heavily requested feature since it is consider by many as a very common scenario, specially when serializing POCOs that came from an ORM Framework, such as Entity Framework; even though the JSON specification does not support reference loops by default. Therefore, this will be implemented as an opt-in feature (for both serialization and deserialization).
 
 The current solution to deal with reference loops is to rely in MaxDepth and throw a JsonException after it is exceeded. Now, this is a decent and cheap solution but we will also offer other not-so-cheap options to deal with this problem while keeping the current one in order to not affect the out-of-the-box performance.
 
@@ -15,10 +15,10 @@ Json.Net contains settings that you can enable to deal with such problems.
 * For Deserialization:
   * [`MetadataPropertyHandling`](https://www.newtonsoft.com/json/help/html/T_Newtonsoft_Json_MetadataPropertyHandling.htm)
 
-When using `ReferenceLoopHandling.Ignore`, other objects that were already seen on the current graph branch will be ignored on Serialization.
+When using `ReferenceLoopHandling.Ignore`, other objects that were already seen on the current graph branch will be ignored on serialization.
 
 When using `PreserveReferencesHandling.All` you are signaling that your resulting JSON will contain *metadata* properties `$ref`, `$id` and `$values` which are going to act as reference identifiers (`$id`) and pointers (`$ref`). 
-Now, to read back those references, you have to use `MetadataPropertyHandling.Default` to indicate that *metadata* is expected in the payload passed to the Deserialize method.
+Now, to read back those references, you have to use `MetadataPropertyHandling.Default` to indicate that *metadata* is expected in the payload passed to the `Deserialize` method.
 
 
 # Proposal
@@ -80,13 +80,13 @@ namespace System.Text.Json
     }
 }
 ```
-For System.Text.Json, the goal is to stick to the same *metadata* semantics for preserve from Json.Net and provide a similar usage in `JsonSerializerOptions` that encompasses at least the needed options for an immediate solution, which is to provide reference preservation.
+For System.Text.Json, the goal is to stick to the same *metadata* semantics for preserve from Json.Net and provide a similar usage in `JsonSerializerOptions` that encompasses the needed options (i.e. provide reference preservation).
 
-This API is about exposing the `ReferenceHandling` property as a class type, in order to make it very extensible for future; and provide built-in static instances of `Default` and `Preserve` that are useful to enable the most common behaviors by just setting those in `JsonSerializerOptions.ReferenceHandling`.
+This API is exposing the `ReferenceHandling` property as a class, to be extensible in the future; and provide built-in static instances of `Default` and `Preserve` that are useful to enable the most common behaviors by just setting those in `JsonSerializerOptions.ReferenceHandling`.
 
-With ReferenceHandling being a class, we can exclude things that, as of now, we are not sure if they need to be shipped, in example, the `ReferenceLoopHandling.Ignore` option or the Object and Array granularity of Json.Net's `PreserveReferencesHandling`.
+With `ReferenceHandling` being a class, we can exclude things that, as of now, we are not sure are required and add them later based on customer feedback. For example, the `Object` and `Array` granularity of `Newtonsoft.Json's` ``PreserveReferencesHandling` or the `ReferenceLoopHandling.Ignore` option.
 
-In a future, we might also be able to extend the Deserialization behaviors, in order to provide the granularity of Serialization on Deserialization. Or we could also be able to define independant behaviors for both Serialization and Deserialization; i.e: someone may want to emit payloads with preserved references but he does not want to read them.
+In the future, we might also be able to extend the deserialization behaviors, in order to provide the granularity of Serialization on Deserialization. We could also provide ways to customize the serialization and deserialization behavior independently (i.e: someone may want to emit payloads with preserved references but they do not want to read them).
 
 # Examples
 
@@ -235,7 +235,7 @@ Basically, any type that uses a `EnumerableConverter` and tries to be preserved 
 
 Aside from above, the Deserializer will throw when a CLR value type is passed as preserved when `ReferenceHandling.Preserve` is set. 
 
-As a rule of thumb, we should throw on all cases where the payload contains metadata that is impossible to create with the `JsonSerializer`, however, this conflicts with feature parity in Json.Net; those scenarios are described below.
+As a rule of thumb, we throw on all cases where the JSON payload being read contains any metadata that is impossible to create with the `JsonSerializer` (i.e. it was hand modified). However, this conflicts with feature parity in Newtonsoft.Json; those scenarios are described below.
 
 ## Reference objects ($ref)
 
@@ -297,7 +297,7 @@ As a rule of thumb, we should throw on all cases where the payload contains meta
 }
 ```
  
-* reference object is before preserved object (or preserved object was never spotted):
+* Reference object is before preserved object (or preserved object was never spotted):
   * **Json.Net**: Reference object evaluates as `null`.
   * **S.T.Json**: Reference object evaluates as `null`.
 ```json
@@ -380,9 +380,9 @@ A preserved array is written in the next format `{ "$id": "1", "$values": [ elem
   }
   ```
 
-* Preserved array only contains $values:
+* Preserved array only contains `$values`:
   * **Json.Net**: Does not throw and the payload evaluates to the array in the property.
-  * **S.T.Json**: Throw - Preserved arrays canot lack an identifier.
+  * **S.T.Json**: Throw - Preserved arrays cannot lack an identifier.
 
   ```json
   {
@@ -429,5 +429,5 @@ A preserved array is written in the next format `{ "$id": "1", "$values": [ elem
 2. We are merging the Json.Net types [`ReferenceLoopHandling`]("https://www.newtonsoft.com/json/help/html/T_Newtonsoft_Json_ReferenceLoopHandling.htm") and [`PreserveReferencesHandling`]("https://www.newtonsoft.com/json/help/html/T_Newtonsoft_Json_PreserveReferencesHandling.htm") (we are also not including the granularity on this one) into one single class; `ReferenceHandling`.
 3. While Immutable types and `System.Array`s can be Serialized with Preserve semantics, they will not be supported when trying to Deserialize them as a reference.
 4. Value types, such as structs that contain preserve semantics, will not be supported when Deserialized as well.
-5. Additional features, such as Converter support, `ReferenceResolver`, `JsonPropertyAttribute.IsReference` and `JsonPropertyAttribute.ReferenceLoopHandling`,  that build on top of `ReferenceLoopHandling` and `PreserveReferencesHandling` were considered but they will not be included in this first effort.
+5. Additional features, such as Converter support, `ReferenceResolver`, `JsonPropertyAttribute.IsReference` and `JsonPropertyAttribute.ReferenceLoopHandling`,  that build on top of `ReferenceLoopHandling` and `PreserveReferencesHandling` were considered but they can be added in the future based on customer requests.
 6. We are still looking for evidence that backs up supporting `ReferenceHandling.Ignore`, this option will not ship if said evidence is not found.
