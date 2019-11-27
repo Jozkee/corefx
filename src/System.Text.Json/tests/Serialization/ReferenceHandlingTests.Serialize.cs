@@ -10,6 +10,13 @@ namespace System.Text.Json.Tests
 {
     public static partial class ReferenceHandlingTests
     {
+        public enum TestReferenceHandling
+        {
+            Default,
+            Ignore,
+            Preserve
+        }
+
         private static JsonSerializerOptions _serializeOptionsError = new JsonSerializerOptions { ReferenceHandling = ReferenceHandling.Default };
         private static JsonSerializerOptions _serializeOptionsIgnore = new JsonSerializerOptions { ReferenceHandling = ReferenceHandling.Ignore };
         private static JsonSerializerOptions _serializeOptionsPreserve = new JsonSerializerOptions { ReferenceHandling = ReferenceHandling.Preserve };
@@ -37,17 +44,6 @@ namespace System.Text.Json.Tests
         }
 
         [Fact]
-        public static void VerifyDefaultJsonSerializerOptions()
-        {
-            JsonSerializerOptions opts = new JsonSerializerOptions();
-
-            Assert.Equal(ReferenceHandling.Default, opts.ReferenceHandling);
-
-            Assert.Throws<ArgumentOutOfRangeException>(() => opts.ReferenceHandling = (ReferenceHandling)(-1));
-            Assert.Throws<ArgumentOutOfRangeException>(() => opts.ReferenceHandling = (ReferenceHandling)(3));
-        }
-
-        [Fact]
         public static void ThrowByDefaultOnLoop()
         {
             Employee a = new Employee();
@@ -61,9 +57,9 @@ namespace System.Text.Json.Tests
 
         #region Root Object
         [Theory]
-        [InlineData(ReferenceHandling.Ignore)]
-        [InlineData(ReferenceHandling.Preserve)]
-        public static void ObjectLoop(ReferenceHandling referenceHandling)
+        [InlineData(TestReferenceHandling.Ignore)]
+        [InlineData(TestReferenceHandling.Preserve)]
+        public static void ObjectLoop(TestReferenceHandling referenceHandling)
         {
             Employee angela = new Employee();
             angela.Manager = angela;
@@ -75,9 +71,9 @@ namespace System.Text.Json.Tests
         }
 
         [Theory]
-        [InlineData(ReferenceHandling.Ignore)]
-        [InlineData(ReferenceHandling.Preserve)]
-        public static void ObjectArrayLoop(ReferenceHandling referenceHandling)
+        [InlineData(TestReferenceHandling.Ignore)]
+        [InlineData(TestReferenceHandling.Preserve)]
+        public static void ObjectArrayLoop(TestReferenceHandling referenceHandling)
         {
             Employee angela = new Employee();
             angela.Subordinates = new List<Employee> { angela };
@@ -89,9 +85,9 @@ namespace System.Text.Json.Tests
         }
 
         [Theory]
-        [InlineData(ReferenceHandling.Ignore)]
-        [InlineData(ReferenceHandling.Preserve)]
-        public static void ObjectDictionaryLoop(ReferenceHandling referenceHandling)
+        [InlineData(TestReferenceHandling.Ignore)]
+        [InlineData(TestReferenceHandling.Preserve)]
+        public static void ObjectDictionaryLoop(TestReferenceHandling referenceHandling)
         {
             Employee angela = new Employee();
             angela.Contacts = new Dictionary<string, Employee> { { "555-5555", angela } };
@@ -112,8 +108,8 @@ namespace System.Text.Json.Tests
 
 
 
-            string expected = JsonConvert.SerializeObject(angela, JsonNetSettings(ReferenceHandling.Preserve));
-            string actual = JsonSerializer.Serialize(angela, SystemTextJsonOptions(ReferenceHandling.Preserve));
+            string expected = JsonConvert.SerializeObject(angela, JsonNetSettings(TestReferenceHandling.Preserve));
+            string actual = JsonSerializer.Serialize(angela, SystemTextJsonOptions(TestReferenceHandling.Preserve));
 
             Assert.Equal(expected, actual);
         }
@@ -126,8 +122,8 @@ namespace System.Text.Json.Tests
             angela.Contacts = new Dictionary<string, Employee> { { "444-4444", new Employee { Name = "Bob" } } };
             angela.Contacts2 = angela.Contacts;
 
-            string expected = JsonConvert.SerializeObject(angela, JsonNetSettings(ReferenceHandling.Preserve));
-            string actual = JsonSerializer.Serialize(angela, SystemTextJsonOptions(ReferenceHandling.Preserve));
+            string expected = JsonConvert.SerializeObject(angela, JsonNetSettings(TestReferenceHandling.Preserve));
+            string actual = JsonSerializer.Serialize(angela, SystemTextJsonOptions(TestReferenceHandling.Preserve));
 
             Assert.Equal(expected, actual);
         }
@@ -140,17 +136,17 @@ namespace System.Text.Json.Tests
             angela.Subordinates = new List<Employee> { new Employee { Name = "Bob" } };
             angela.Subordinates2 = angela.Subordinates;
 
-            string expected = JsonConvert.SerializeObject(angela, JsonNetSettings(ReferenceHandling.Preserve));
-            string actual = JsonSerializer.Serialize(angela, SystemTextJsonOptions(ReferenceHandling.Preserve));
+            string expected = JsonConvert.SerializeObject(angela, JsonNetSettings(TestReferenceHandling.Preserve));
+            string actual = JsonSerializer.Serialize(angela, SystemTextJsonOptions(TestReferenceHandling.Preserve));
 
             Assert.Equal(expected, actual);
         }
 
         [Theory]
-        [InlineData(ReferenceHandling.Ignore)]
-        [InlineData(ReferenceHandling.Preserve)]
+        [InlineData(TestReferenceHandling.Ignore)]
+        [InlineData(TestReferenceHandling.Preserve)]
         //Check objects are correctly added/removed from the Hashset.
-        public static void ObjectFoundTwiceOnSameDepth(ReferenceHandling handling)
+        public static void ObjectFoundTwiceOnSameDepth(TestReferenceHandling handling)
         {
             //Validate that the 'a' reference remains in the set when found somewhere else.
             //a--> b--> a
@@ -174,9 +170,9 @@ namespace System.Text.Json.Tests
         private class MyDictionary : Dictionary<string, MyDictionary> { }
 
         [Theory]
-        [InlineData(ReferenceHandling.Ignore)]
-        [InlineData(ReferenceHandling.Preserve)]
-        public static void DictionaryLoop(ReferenceHandling handling)
+        [InlineData(TestReferenceHandling.Ignore)]
+        [InlineData(TestReferenceHandling.Preserve)]
+        public static void DictionaryLoop(TestReferenceHandling handling)
         {
             MyDictionary root = new MyDictionary();
             root["Self"] = root;
@@ -189,9 +185,9 @@ namespace System.Text.Json.Tests
         }
 
         [Theory]
-        [InlineData(ReferenceHandling.Ignore)]
-        [InlineData(ReferenceHandling.Preserve)]
-        public static void DictionaryObjectLoop(ReferenceHandling referenceHandling)
+        [InlineData(TestReferenceHandling.Ignore)]
+        [InlineData(TestReferenceHandling.Preserve)]
+        public static void DictionaryObjectLoop(TestReferenceHandling referenceHandling)
         {
             Dictionary<string, Employee> root = new Dictionary<string, Employee>();
             root["Angela"] = new Employee() { Name = "Angela", Contacts = root };
@@ -205,9 +201,9 @@ namespace System.Text.Json.Tests
         private class MyDictionaryArrayValues : Dictionary<string, List<MyDictionaryArrayValues>> { }
 
         [Theory]
-        [InlineData(ReferenceHandling.Ignore)]
-        [InlineData(ReferenceHandling.Preserve)]
-        public static void DictionaryArrayLoop(ReferenceHandling referenceHandling)
+        [InlineData(TestReferenceHandling.Ignore)]
+        [InlineData(TestReferenceHandling.Preserve)]
+        public static void DictionaryArrayLoop(TestReferenceHandling referenceHandling)
         {
             MyDictionaryArrayValues root = new MyDictionaryArrayValues();
             root["ArrayWithSelf"] = new List<MyDictionaryArrayValues> { root };
@@ -225,8 +221,8 @@ namespace System.Text.Json.Tests
             root["Self1"] = root;
             root["Self2"] = root;
 
-            string expected = JsonConvert.SerializeObject(root, JsonNetSettings(ReferenceHandling.Preserve));
-            string actual = JsonSerializer.Serialize(root, SystemTextJsonOptions(ReferenceHandling.Preserve));
+            string expected = JsonConvert.SerializeObject(root, JsonNetSettings(TestReferenceHandling.Preserve));
+            string actual = JsonSerializer.Serialize(root, SystemTextJsonOptions(TestReferenceHandling.Preserve));
 
             Assert.Equal(expected, actual);
         }
@@ -238,8 +234,8 @@ namespace System.Text.Json.Tests
             root["Employee1"] = new Employee { Name = "Angela" };
             root["Employee2"] = root["Employee1"];
 
-            string expected = JsonConvert.SerializeObject(root, JsonNetSettings(ReferenceHandling.Preserve));
-            string actual = JsonSerializer.Serialize(root, SystemTextJsonOptions(ReferenceHandling.Preserve));
+            string expected = JsonConvert.SerializeObject(root, JsonNetSettings(TestReferenceHandling.Preserve));
+            string actual = JsonSerializer.Serialize(root, SystemTextJsonOptions(TestReferenceHandling.Preserve));
 
             Assert.Equal(expected, actual);
         }
@@ -251,8 +247,8 @@ namespace System.Text.Json.Tests
             root["Array1"] = new List<MyDictionaryArrayValues> { root };
             root["Array2"] = root["Array1"];
 
-            string expected = JsonConvert.SerializeObject(root, JsonNetSettings(ReferenceHandling.Preserve));
-            string actual = JsonSerializer.Serialize(root, SystemTextJsonOptions(ReferenceHandling.Preserve));
+            string expected = JsonConvert.SerializeObject(root, JsonNetSettings(TestReferenceHandling.Preserve));
+            string actual = JsonSerializer.Serialize(root, SystemTextJsonOptions(TestReferenceHandling.Preserve));
 
             Assert.Equal(expected, actual);
         }
@@ -267,8 +263,8 @@ namespace System.Text.Json.Tests
 
             root["angela"] = elem;
 
-            string expected = JsonConvert.SerializeObject(root, JsonNetSettings(ReferenceHandling.Ignore));
-            string actual = JsonSerializer.Serialize(root, SystemTextJsonOptions(ReferenceHandling.Ignore));
+            string expected = JsonConvert.SerializeObject(root, JsonNetSettings(TestReferenceHandling.Ignore));
+            string actual = JsonSerializer.Serialize(root, SystemTextJsonOptions(TestReferenceHandling.Ignore));
 
             Assert.Equal(expected, actual);
         }
@@ -278,9 +274,9 @@ namespace System.Text.Json.Tests
         private class MyList : List<MyList> { }
 
         [Theory]
-        [InlineData(ReferenceHandling.Ignore)]
-        [InlineData(ReferenceHandling.Preserve)]
-        public static void ArrayLoop(ReferenceHandling referenceHandling)
+        [InlineData(TestReferenceHandling.Ignore)]
+        [InlineData(TestReferenceHandling.Preserve)]
+        public static void ArrayLoop(TestReferenceHandling referenceHandling)
         {
             MyList root = new MyList();
             root.Add(root);
@@ -292,9 +288,9 @@ namespace System.Text.Json.Tests
         }
 
         [Theory]
-        [InlineData(ReferenceHandling.Ignore)]
-        [InlineData(ReferenceHandling.Preserve)]
-        public static void ArrayObjectLoop(ReferenceHandling referenceHandling)
+        [InlineData(TestReferenceHandling.Ignore)]
+        [InlineData(TestReferenceHandling.Preserve)]
+        public static void ArrayObjectLoop(TestReferenceHandling referenceHandling)
         {
             List<Employee> root = new List<Employee>();
             root.Add(new Employee() { Name = "Angela", Subordinates = root });
@@ -308,9 +304,9 @@ namespace System.Text.Json.Tests
         private class MyListDictionaryValues : List<Dictionary<string, MyListDictionaryValues>> { }
 
         [Theory]
-        [InlineData(ReferenceHandling.Ignore)]
-        [InlineData(ReferenceHandling.Preserve)]
-        public static void ArrayDictionaryLoop(ReferenceHandling referenceHandling)
+        [InlineData(TestReferenceHandling.Ignore)]
+        [InlineData(TestReferenceHandling.Preserve)]
+        public static void ArrayDictionaryLoop(TestReferenceHandling referenceHandling)
         {
             MyListDictionaryValues root = new MyListDictionaryValues();
             root.Add(new Dictionary<string, MyListDictionaryValues> { { "Root", root } });
@@ -329,8 +325,8 @@ namespace System.Text.Json.Tests
             root.Add(root);
             root.Add(root);
 
-            string expected = JsonConvert.SerializeObject(root, JsonNetSettings(ReferenceHandling.Preserve));
-            string actual = JsonSerializer.Serialize(root, SystemTextJsonOptions(ReferenceHandling.Preserve));
+            string expected = JsonConvert.SerializeObject(root, JsonNetSettings(TestReferenceHandling.Preserve));
+            string actual = JsonSerializer.Serialize(root, SystemTextJsonOptions(TestReferenceHandling.Preserve));
 
             Assert.Equal(expected, actual);
         }
@@ -342,8 +338,8 @@ namespace System.Text.Json.Tests
             root.Add(new Employee { Name = "Angela" });
             root.Add(root[0]);
 
-            string expected = JsonConvert.SerializeObject(root, JsonNetSettings(ReferenceHandling.Preserve));
-            string actual = JsonSerializer.Serialize(root, SystemTextJsonOptions(ReferenceHandling.Preserve));
+            string expected = JsonConvert.SerializeObject(root, JsonNetSettings(TestReferenceHandling.Preserve));
+            string actual = JsonSerializer.Serialize(root, SystemTextJsonOptions(TestReferenceHandling.Preserve));
 
             Assert.Equal(expected, actual);
         }
@@ -355,8 +351,8 @@ namespace System.Text.Json.Tests
             root.Add(new Dictionary<string, MyListDictionaryValues>());
             root.Add(root[0]);
 
-            string expected = JsonConvert.SerializeObject(root, JsonNetSettings(ReferenceHandling.Preserve));
-            string actual = JsonSerializer.Serialize(root, SystemTextJsonOptions(ReferenceHandling.Preserve));
+            string expected = JsonConvert.SerializeObject(root, JsonNetSettings(TestReferenceHandling.Preserve));
+            string actual = JsonSerializer.Serialize(root, SystemTextJsonOptions(TestReferenceHandling.Preserve));
 
             Assert.Equal(expected, actual);
         }
@@ -376,8 +372,8 @@ namespace System.Text.Json.Tests
             employees.Add(bob);
             employees.Add(bob);
 
-            string expected = JsonConvert.SerializeObject(employees, JsonNetSettings(ReferenceHandling.Ignore));
-            string actual = JsonSerializer.Serialize(employees, SystemTextJsonOptions(ReferenceHandling.Ignore));
+            string expected = JsonConvert.SerializeObject(employees, JsonNetSettings(TestReferenceHandling.Ignore));
+            string actual = JsonSerializer.Serialize(employees, SystemTextJsonOptions(TestReferenceHandling.Ignore));
 
             Assert.Equal(expected, actual);
         }
@@ -392,8 +388,8 @@ namespace System.Text.Json.Tests
 
             root.Add(elem);
 
-            string expected = JsonConvert.SerializeObject(root, JsonNetSettings(ReferenceHandling.Ignore));
-            string actual = JsonSerializer.Serialize(root, SystemTextJsonOptions(ReferenceHandling.Ignore));
+            string expected = JsonConvert.SerializeObject(root, JsonNetSettings(TestReferenceHandling.Ignore));
+            string actual = JsonSerializer.Serialize(root, SystemTextJsonOptions(TestReferenceHandling.Ignore));
 
             Assert.Equal(expected, actual);
         }
@@ -411,8 +407,8 @@ namespace System.Text.Json.Tests
             EmployeeStruct elem = new EmployeeStruct { Name = "Angela" };
             List<EmployeeStruct> root = new List<EmployeeStruct> { elem, elem };
 
-            string expected = JsonConvert.SerializeObject(root, JsonNetSettings(ReferenceHandling.Preserve));
-            string actual = JsonSerializer.Serialize(root, SystemTextJsonOptions(ReferenceHandling.Preserve));
+            string expected = JsonConvert.SerializeObject(root, JsonNetSettings(TestReferenceHandling.Preserve));
+            string actual = JsonSerializer.Serialize(root, SystemTextJsonOptions(TestReferenceHandling.Preserve));
 
             Assert.Equal(expected, actual);
         }
@@ -420,29 +416,29 @@ namespace System.Text.Json.Tests
 
 
         //utility
-        private static JsonSerializerSettings JsonNetSettings(ReferenceHandling referenceHandling)
+        private static JsonSerializerSettings JsonNetSettings(TestReferenceHandling referenceHandling)
         {
             switch(referenceHandling){
-                case ReferenceHandling.Default:
+                case TestReferenceHandling.Default:
                     return _newtonsoftSerializeOptionsError;
-                case ReferenceHandling.Ignore:
+                case TestReferenceHandling.Ignore:
                     return _newtonsoftSerializeOptionsIgnore;
-                case ReferenceHandling.Preserve:
+                case TestReferenceHandling.Preserve:
                     return _newtonsoftSerializeOptionsPreserve;
             }
 
             return _newtonsoftSerializeOptionsError;
         }
 
-        private static JsonSerializerOptions SystemTextJsonOptions(ReferenceHandling referenceHandling)
+        private static JsonSerializerOptions SystemTextJsonOptions(TestReferenceHandling referenceHandling)
         {
             switch (referenceHandling)
             {
-                case ReferenceHandling.Default:
+                case TestReferenceHandling.Default:
                     return _serializeOptionsError;
-                case ReferenceHandling.Ignore:
+                case TestReferenceHandling.Ignore:
                     return _serializeOptionsIgnore;
-                case ReferenceHandling.Preserve:
+                case TestReferenceHandling.Preserve:
                     return _serializeOptionsPreserve;
             }
 

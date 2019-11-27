@@ -5,6 +5,7 @@
 using System.Buffers;
 using System.Diagnostics;
 using System.IO;
+using System.Text.Json.Serialization;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -216,7 +217,7 @@ namespace System.Text.Json
             readStack.ReadAhead = !isFinalBlock;
             readStack.BytesConsumed = 0;
 
-            if (options.ReferenceHandling == ReferenceHandling.Preserve)
+            if (options.ReferenceHandling.PreserveHandlingOnDeserialize == PreserveReferencesHandling.All)
             {
                 ReadCoreRef(
                     options,

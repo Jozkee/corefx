@@ -25,7 +25,7 @@ namespace System.Text.Json
         private JsonNamingPolicy _jsonPropertyNamingPolicy;
         private JsonCommentHandling _readCommentHandling;
         private JavaScriptEncoder _encoder;
-        private ReferenceHandling _referenceHandling;
+        private ReferenceHandling _referenceHandling = ReferenceHandling.Default;
         private int _defaultBufferSize = BufferSizeDefault;
         private int _maxDepth;
         private bool _allowTrailingCommas;
@@ -312,11 +312,9 @@ namespace System.Text.Json
             {
                 VerifyMutable();
 
-                if ((uint)value > (uint)ReferenceHandling.Preserve)
-                {
-                    throw new ArgumentOutOfRangeException(nameof(value));
-                }
                 _referenceHandling = value;
+
+                JsonSerializer.SetReferenceHandlingDelegates(this);
             }
         }
 

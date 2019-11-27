@@ -84,14 +84,6 @@ namespace System.Text.Json
         Skip = (byte)1,
         Allow = (byte)2,
     }
-
-    public enum ReferenceHandling
-    {
-        Default = 0,
-        Ignore = 1,
-        Preserve = 2,
-    }
-
     public sealed partial class JsonDocument : System.IDisposable
     {
         internal JsonDocument() { }
@@ -466,7 +458,7 @@ namespace System.Text.Json
         public bool PropertyNameCaseInsensitive { get { throw null; } set { } }
         public System.Text.Json.JsonNamingPolicy PropertyNamingPolicy { get { throw null; } set { } }
         public System.Text.Json.JsonCommentHandling ReadCommentHandling { get { throw null; } set { } }
-        public System.Text.Json.ReferenceHandling ReferenceHandling { get { throw null; } set { } }
+        public System.Text.Json.Serialization.ReferenceHandling ReferenceHandling { get { throw null; } set { } }
         public bool WriteIndented { get { throw null; } set { } }
         public System.Text.Json.Serialization.JsonConverter GetConverter(System.Type typeToConvert) { throw null; }
     }
@@ -528,7 +520,6 @@ namespace System.Text.Json
         public bool Indented { get { throw null; } set { } }
         public bool SkipValidation { get { throw null; } set { } }
     }
-
     public ref partial struct Utf8JsonReader
     {
         private object _dummy;
@@ -779,5 +770,12 @@ namespace System.Text.Json.Serialization
         public JsonStringEnumConverter(System.Text.Json.JsonNamingPolicy namingPolicy = null, bool allowIntegerValues = true) { }
         public override bool CanConvert(System.Type typeToConvert) { throw null; }
         public override System.Text.Json.Serialization.JsonConverter CreateConverter(System.Type typeToConvert, System.Text.Json.JsonSerializerOptions options) { throw null; }
+    }
+    public sealed partial class ReferenceHandling
+    {
+        internal ReferenceHandling() { }
+        public static System.Text.Json.Serialization.ReferenceHandling Default { get { throw null; } }
+        public static System.Text.Json.Serialization.ReferenceHandling Ignore { get { throw null; } }
+        public static System.Text.Json.Serialization.ReferenceHandling Preserve { get { throw null; } }
     }
 }

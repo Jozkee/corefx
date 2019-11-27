@@ -4,6 +4,7 @@
 
 using System.Buffers;
 using System.Diagnostics;
+using System.Text.Json.Serialization;
 
 namespace System.Text.Json
 {
@@ -302,7 +303,7 @@ namespace System.Text.Json
 
                 var newReader = new Utf8JsonReader(rentedSpan, isFinalBlock: true, state: default);
 
-                if (options.ReferenceHandling == ReferenceHandling.Preserve)
+                if (options.ReferenceHandling.PreserveHandlingOnDeserialize == PreserveReferencesHandling.All)
                 {
                     ReadCoreRef(options, ref newReader, ref readStack);
                 }

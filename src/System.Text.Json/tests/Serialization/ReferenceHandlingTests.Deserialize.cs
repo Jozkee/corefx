@@ -4,6 +4,7 @@
 using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Dynamic;
+using System.Text.Json.Serialization;
 using Newtonsoft.Json;
 using Xunit;
 
@@ -603,12 +604,6 @@ namespace System.Text.Json.Tests
 
         #region Throw cases
         [Fact]
-        public static void VerifyReferenceHandlingInJsonSerializerOptions()
-        {
-            Assert.Throws<ArgumentOutOfRangeException>(() => new JsonSerializerOptions { ReferenceHandling = (ReferenceHandling)(-1) });
-        }
-
-        [Fact]
         public static void JsonPath()
         {
             string json = @"[0";
@@ -1034,7 +1029,66 @@ namespace System.Text.Json.Tests
             Assert.Equal("The property is already part of a preserved array object, cannot be read as a preserved array.", ex.Message);
         }
         #endregion
+
+        #region JsonPropertyInfo overlaps with metadata
+        // WIP
+        // TODO: Add also similar tests on Serialize.
+        private class EmployeeAnnotated
+        {
+            [JsonPropertyName("$id")]
+            public string Identifier { get; set; }
+            [JsonPropertyName("$ref")]
+            public string Reference { get; set; }
+            [JsonPropertyName("$values")]
+            public List<EmployeeAnnotated> Values { get; set; }
+
+            public string Name { get; set; }
+        }
+
+        [Fact]
+        public static void TestJsonPropertyName()
+        {
+            var root = new EmployeeAnnotated();
+            root.Identifier = "10";
+            root.Reference = "5";
+            root.Values = new List<EmployeeAnnotated> { root };
+
+            string json = JsonSerializer.Serialize(root);
+            Console.Write(json);
+        }
+
+        [Fact]
+        public static void TestJsonPropertyNameId()
+        {
+            string json = @"{
+                ""$id"": ""1"",
+                ""Name"": ""Angela""
+            }";
+
+            EmployeeAnnotated obj = JsonSerializer.Deserialize<EmployeeAnnotated>(json, _deserializeOptions);
+            Assert.Null(obj.Identifier);
+        }
+
+        [Fact]
+        public static void TestJsonPropertyNameValues()
+        {
+            string json = @"{
+                ""$id"": ""1"",
+                ""Name"": ""Angela"",
+                ""Values"": {
+                    ""$id"": ""2"",
+                    ""$values"": []
+                }
+            }";
+
+            EmployeeAnnotated obj = JsonSerializer.Deserialize<EmployeeAnnotated>(json, _deserializeOptions);
+            Assert.Null(obj.Identifier);
+        }
+
+        #endregion
+
         //TODO: Add more tests for dictionaries.
+
         #endregion
     }
 }

@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Diagnostics;
+using System.Text.Json.Serialization;
 
 namespace System.Text.Json
 {
@@ -133,7 +134,6 @@ namespace System.Text.Json
                 WriteStack state = default;
                 state.Current.Initialize(type, options);
                 state.Current.CurrentValue = value;
-                SetReferenceHandlingDelegates(options);
 
                 Write(writer, writer.CurrentDepth, flushThreshold: -1, options, ref state);
             }
@@ -142,26 +142,29 @@ namespace System.Text.Json
         }
 
 
-        private static void SetReferenceHandlingDelegates(JsonSerializerOptions options)
+        internal static void SetReferenceHandlingDelegates(JsonSerializerOptions options)
         {
-            if (options.ReferenceHandling == ReferenceHandling.Preserve)
+            if (options.ReferenceHandling.PreserveHandlingOnSerialize == PreserveReferencesHandling.All)
             {
                 options.WriteStart = WriteReferenceObjectOrArrayStart;
                 options.HandleReference = PreserveReferencesStrategy;
                 options.PopReference = (ref WriteStack _, bool __) => { }; //enpty delegate, we dont need to use the reference stack when optiong-in for preserve.
             }
-            else if (options.ReferenceHandling == ReferenceHandling.Ignore)
+            else
             {
-                options.WriteStart = WriteObjectOrArrayStart;
-                options.HandleReference = IgnoreReferencesStrategy;
-                options.PopReference = PopReference;
+                if (options.ReferenceHandling.LoopHandling == ReferenceLoopHandling.Ignore)
+                {
+                    options.WriteStart = WriteObjectOrArrayStart;
+                    options.HandleReference = IgnoreReferencesStrategy;
+                    options.PopReference = PopReference;
+                }
+                else
+                {
+                    options.HandleReference = DefaultOnReferencesStrategy;
+                    options.WriteStart = WriteObjectOrArrayStart;
+                    options.PopReference = DefaultPopReference;
+                }
             }
-            //else
-            //{
-            //    options.WriteStart = WriteObjectOrArrayStart;
-            //    options.HandleReference = ThrowOnReferencesStrategy;
-            //    options.PopReference = PopReferenceAfterThreshold;
-            //}
         }
     }
 }
