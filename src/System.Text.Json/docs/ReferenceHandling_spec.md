@@ -4,7 +4,7 @@
 
 **Preserve duplicated references**: Semantically represent objects and/or arrays whose have been previously written, with a reference to them in subsequent founds.
 
-**Metadata**: Extra properties on JSON objects and/or arrays (that may change thir schema) to enable reference preservation when round-tripping, those properties are only meant to be understand by the `JsonSerializer`.
+**Metadata**: Extra properties on JSON objects and/or arrays (that may change thir schema) to enable reference preservation when round-tripping, those properties are only meant to be understand by the `JsonSerializer`.  
 
 # Motivation
 
@@ -175,16 +175,18 @@ class Employee
 ```
 
 ## Using Ignore on Serialize
+```cs
+private Employee bob = new Employee { Name = "Bob" };
+private Employee angela = new Employee { Name = "Angela" };
+
+angela.Manager = bob;
+bob.Subordinates = new List<Employee>{ angela };
+```
+
 On System.Text.Json:
 ```cs
 public static void WriteIgnoringReferenceLoops()
 {
-    var bob = new Employee { Name = "Bob" };
-    var angela = new Employee { Name = "Angela" };
-
-    angela.Manager = bob;
-    bob.Subordinates = new List<Employee>{ angela };
-
     var options = new JsonSerializerOptions
     {
         ReferenceHandling = ReferenceHandling.Ignore
@@ -200,12 +202,6 @@ On Newtonsoft.Json:
 ```cs
 public static void WriteIgnoringReferenceLoops()
 {
-    var bob = new Employee { Name = "Bob" };
-    var angela = new Employee { Name = "Angela" };
-
-    angela.Manager = bob;
-    bob.Subordinates = new List<Employee>{ angela };
-
     var settings = new JsonSerializerSettings
     {
         ReferenceLoopHandling = ReferenceLoopHandling.Ignore
@@ -230,16 +226,18 @@ Output:
 ```
 
 ## Using Preserve on Serialize
+```cs
+private Employee bob = new Employee { Name = "Bob" };
+private Employee angela = new Employee { Name = "Angela" };
+
+angela.Manager = bob;
+bob.Subordinates = new List<Employee>{ angela };
+```
+
 On System.Text.Json:
 ```cs
 public static void WritePreservingReference()
 {
-    var bob = new Employee { Name = "Bob" };
-    var angela = new Employee { Name = "Angela" };
-
-    angela.Manager = bob;
-    bob.Subordinates = new List<Employee>{ angela };
-
     var options = new JsonSerializerOptions
     {
         ReferenceHandling = ReferenceHandling.Preserve
@@ -255,12 +253,6 @@ On Newtonsoft.Json:
 ```cs
 public static void WritePreservingReference()
 {
-    var bob = new Employee { Name = "Bob" };
-    var angela = new Employee { Name = "Angela" };
-
-    angela.Manager = bob;
-    bob.Subordinates = new List<Employee>{ angela };
-
     var settings = new JsonSerializerSettings
     {
         PreserveReferencesHandling = PreserveReferencesHandling.All
@@ -296,10 +288,8 @@ Output:
 ```
 
 ## Using Preserve on Deserialize
-On System.Text.Json:
 ```cs
-public static void ReadJsonWithPreservedReferences(){
-    string json = 
+private const string json = 
     @"{
         ""$id"": ""1"",
         ""Name"": ""Angela"",
@@ -316,7 +306,10 @@ public static void ReadJsonWithPreservedReferences(){
             }            
         }
     }";
-
+```
+On System.Text.Json:
+```cs
+public static void ReadJsonWithPreservedReferences(){
     var options = new JsonSerializerOptions
     {
         ReferenceHandling = ReferenceHandling.Preserve
@@ -330,24 +323,6 @@ public static void ReadJsonWithPreservedReferences(){
 On Newtonsoft.Json:
 ```cs
 public static void ReadJsonWithPreservedReferences(){
-    string json = 
-    @"{
-        ""$id"": ""1"",
-        ""Name"": ""Angela"",
-        ""Manager"": {
-            ""$id"": ""2"",
-            ""Name"": ""Bob"",
-            ""Subordinates"": {
-                ""$id"": ""3"",
-                ""$values"": [
-                    { 
-                        ""$ref"": ""1"" 
-                    }
-                ]
-            }            
-        }
-    }";
-
     var options = new JsonSerializerSettings
     {
         //Newtonsoft.Json reads metadata by default, just setting the option for ilustrative purposes.
@@ -419,9 +394,6 @@ public static void WriteIgnoringReferenceLoopsAndReadPreservedReferences()
 # Ground rules
 
 As a rule of thumb, we throw on all cases where the JSON payload being read contains any metadata that is impossible to create with the `JsonSerializer` (i.e. it was hand modified). However, this conflicts with feature parity in Newtonsoft.Json; those scenarios are described below.
-
-## Interaction with JsonPropertyNameAttribute
-TODO
 
 ## Reference objects ($ref)
 
@@ -610,6 +582,56 @@ A preserved array is written in the next format `{ "$id": "1", "$values": [ elem
   }
   ```
 
+## JSON Objects if not Collection (Class | Struct | Dictionary) - On Deserialize (and Serialize?)
+
+* `$ref` **Valid** under conditions:
+  * must be the only property in the object.
+
+* `$id` **Valid** under conditions:
+  * must be the first property in the object
+
+* `$values` **Not Valid**
+
+* `$.*` **Valid**
+
+Note: For Dictionary keys on serialize, should we allow serializing keys `$id`, `$ref` and `$values`? if we allow it, then there is a potential round-tripping issue.
+Sample of similar issue with `DictionaryKeyPolicy`:
+```cs
+public static void TestDictionary_Collision() 
+{
+    var root = new Dictionary<string, int>();
+    root["helloWorld"] = 100;
+    root["HelloWorld"] = 200;
+
+    var opts = new JsonSerializerOptions
+    {
+        DictionaryKeyPolicy = JsonNamingPolicy.CamelCase
+    };
+
+    string json = JsonSerializer.Serialize(root, opts);
+    Console.WriteLine(json);
+    /* Output:
+    {"helloWorld":100,"helloWorld":200} */
+
+    // Round tripping issue
+    root = JsonSerializer.Deserialize<Dictionary<string, int>>(json);
+}
+```
+
+
+## JSON Object if Collection - On Deserialize
+
+* `$ref` **Valid** under conditions:
+  * must be the only property in the object.
+
+* `$id` **Valid** under conditions:
+  * must be the first property in the object.
+
+* `$values` **Valid** under conditions:
+  * must be after `$id`
+
+* `$.*` **Not Valid**
+
 
 ## Immutable types
 Since these types are created with the help of an internal converter, and they are not parsed until the entire block of JSON finishes, nested reference to these types is impossible to identify, unless you re-scan the resulting object, which is too expensive.
@@ -696,6 +718,45 @@ public static void DeserializeStructs()
 ```
 
 In other words, having a `$ref` property in a struct, is never emitted by the serializer and read such thing (by manually changing the JSON payload) is not supported by the deserializer.
+
+## Interaction with JsonPropertyNameAttribute
+Having the following class:
+
+```cs
+private class EmployeeAnnotated
+{
+    [JsonPropertyName("$id")]
+    public string Identifier { get; set; }
+    [JsonPropertyName("$ref")]
+    public string Reference { get; set; }
+    [JsonPropertyName("$values")]
+    public List<EmployeeAnnotated> Values { get; set; }
+
+    public string Name { get; set; }
+}
+```
+
+Either on Serialization or Deserialization:
+
+```cs
+public static void DeSerializeWithPreserve()
+{
+    var root = new EmployeeAnnotated();
+    var opts = new JsonSerializerOptions
+    {
+        ReferenceHandling = ReferenceHandling.Preserve
+    };
+
+    //Throw JsonException - PropertyName cannot start with '$' when Preserve References is enabled.
+    string json = JsonSerializer.Serialize(root, opts);
+    
+    //Also throws the same exception.
+    EmployeeAnnotated obj = JsonSerializer.Deserialize(json, opts);
+}
+```
+
+
+
 
 # Notes
 
