@@ -123,6 +123,14 @@ namespace System.Text.Json
 
                     state.Current.ReturnValue = classInfo.CreateObject();
                 }
+                else if (state.Current.IsProcessingEnumerable())
+                {
+                    Type preservedObjType = typeof(JsonPreservedReference<>).MakeGenericType(state.Current.JsonClassInfo.Type);
+                    // Re-Initialize the current frame.
+                    state.Current.Initialize(preservedObjType, options);
+                    state.Current.ReturnValue = state.Current.JsonClassInfo.CreateObject();
+                    state.Current.IsPreservedArray = true;
+                }
                 else
                 {
                     ThrowHelper.ThrowJsonException_DeserializeUnableToConvertValue(classInfo.Type);

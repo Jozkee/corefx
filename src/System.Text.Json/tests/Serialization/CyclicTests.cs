@@ -20,7 +20,7 @@ namespace System.Text.Json.Serialization.Tests
             Assert.Throws<JsonException>(() => JsonSerializer.Serialize(obj));
         }
 
-        [Theory(Skip = "Behavior changed due ReferenceHandling")]
+        [Theory]
         [InlineData(1)]
         [InlineData(2)]
         [InlineData(10)]

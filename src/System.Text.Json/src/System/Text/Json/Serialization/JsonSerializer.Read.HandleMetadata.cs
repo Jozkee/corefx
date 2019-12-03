@@ -68,9 +68,11 @@ namespace System.Text.Json
                         }
                         break;
                 }
+
+                return MetadataPropertyName.Unknonwn;
             }
 
-            return MetadataPropertyName.Unknown;
+            return MetadataPropertyName.NoMetadata;
         }
 
         private static void HandleReference(JsonSerializerOptions options, ref ReadStack state, ref Utf8JsonReader reader)
@@ -113,7 +115,8 @@ namespace System.Text.Json
 
     internal enum MetadataPropertyName
     {
-        Unknown,
+        NoMetadata,
+        Unknonwn,
         Values,
         Id,
         Ref,

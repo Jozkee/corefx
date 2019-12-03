@@ -15,7 +15,6 @@ namespace System.Text.Json
             T copy = Values;
         }
 
-        [JsonPropertyName("$values")]
         public T Values { get; set; }
     }
 
@@ -31,9 +30,6 @@ namespace System.Text.Json
             if (state.Current.IsProcessingEnumerable())
             {
                 // A nested object within an enumerable (non-dictionary).
-
-                //TODO dummy code to force linking of Values
-                new JsonPreservedReference<object>();
 
                 if (!state.Current.CollectionPropertyInitialized)
                 {
@@ -98,6 +94,9 @@ namespace System.Text.Json
                 // A potential Preserved Array - Hit an StartObject while enumerable has not been initialized.
                 if (!state.Current.CollectionPropertyInitialized)
                 {
+                    //dummy code to force linking of Values
+                    new JsonPreservedReference<object>();
+
                     //Check we are not dealing with an immutable collection or fixed size array.
                     if (state.Current.JsonPropertyInfo.EnumerableConverter != null)
                     {
