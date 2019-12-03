@@ -598,9 +598,11 @@ public static void TestDictionary_Collision()
 
 
 ## Immutable types
-Since these types are created with the help of an internal converter, and they are not parsed until the entire block of JSON finishes, nested reference to these types is impossible to identify, unless you re-scan the resulting object, which is too expensive.
+Since these types are created with the help of an internal converter, and they are not parsed until the entire block of JSON finishes; nested reference to these types is impossible to identify, unless you re-scan the resulting object, which is too expensive.
 
-With that said, the deserializer will throw when it reads `$id` on any of these types.
+With that said, the deserializer will throw when it reads `$id` on any of these types; but regardless of that, when writing those types, they are going to be preserved as any other collection type (`{ "$id": "1", "$values": [...] }`) since those types can still being parsed into a collection type that it is supported.
+
+NOTE: This behavior also exists in `Newtonsoft.Json`.
 
 * **Immutable types**: i.e: `ImmutableList` and `ImmutableDictionary`
 * **System.Array**
