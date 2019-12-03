@@ -113,9 +113,9 @@ Having the following class:
 ```cs
 class Employee 
 { 
-    string Name { get; set; }
-    Employee Manager { get; set; }
-    List<Employee> Subordinates { get; set; }
+    public string Name { get; set; }
+    public Employee Manager { get; set; }
+    public List<Employee> Subordinates { get; set; }
 }
 ```
 
@@ -608,7 +608,7 @@ With that said, the deserializer will throw when it reads `$id` on any of these 
 ## Value types
 
 * **Serialization**: 
-The serializer emits an `$id` for every JSON complex type, that means that if you have a custom struct, the serializer will append an id to it, however, there will never be a reference to these ids, since by default it uses `ReferenceEquals` when checking for references.
+The serializer emits an `$id` for every JSON complex type, that means that if you have a custom struct (which is value type), the serializer will append an `$id` to it, however, there will never be a reference to those `$id`s, since by default it uses `ReferenceEquals` when comparing the objects.
 
 ```cs
 public static void SerializeStructs()
@@ -733,12 +733,12 @@ Things that may build on top based on customer feedback:
 // Example of a class annotated with JsonReferenceHandling attributes.
 [JsonReferenceHandling(ReferenceHandling.Preserve)]
 public class Employee { 
-    string Name { get; set; }
+    public string Name { get; set; }
 
     [JsonReferenceHandling(ReferenceHandling.Ignore)]
-    Employee Manager { get; set; }
+    public Employee Manager { get; set; }
     
-    List<Employee> Subordinates { get; set; }
+    public List<Employee> Subordinates { get; set; }
 }
 ```
 
