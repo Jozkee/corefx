@@ -34,7 +34,7 @@ namespace System.Text.Json
         {
             if (_referenceResolver == null)
             {
-                return null;
+                _referenceResolver = new DefaultReferenceResolver();
             }
 
             return _referenceResolver.ResolveReference(key);

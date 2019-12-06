@@ -128,7 +128,9 @@ namespace System.Text.Json
                 {
                     state.Current.JsonPropertyInfo = state.Current.JsonClassInfo.PolicyProperty;
                 }
-                MetadataPropertyName meta = GetMetadataPropertyName(reader.HasValueSequence ? reader.ValueSequence.ToArray() : reader.ValueSpan);
+
+                ReadOnlySpan<byte> propertyName = reader.HasValueSequence ? reader.ValueSequence.ToArray() : reader.ValueSpan;
+                MetadataPropertyName meta = GetMetadataPropertyName(propertyName, ref state, ref reader);
                 state.Current.MetadataProperty = meta;
 
                 if (meta == MetadataPropertyName.Id)
@@ -140,13 +142,7 @@ namespace System.Text.Json
 
                     SetAsPreserved(ref state.Current);
                     state.Current.ReadMetadataValue = true;
-
-                    if (state.Current.IsProcessingProperty(ClassType.Dictionary))
-                    {
-                        SetDictionaryCandidateAsValue(ref state);
-                    }
                 }
-                // All code paths except this one need to call SetDictionaryCandidateAsValue.
                 else if (meta == MetadataPropertyName.Ref)
                 {
                     bool isPreserved = state.Current.IsProcessingProperty(ClassType.Dictionary) ? state.Current.DictionaryPropertyIsPreserved : state.Current.IsPreserved;
@@ -154,19 +150,9 @@ namespace System.Text.Json
                     {
                         throw new JsonException("Reference objects cannot contain other properties.");
                     }
+
                     state.Current.ReadMetadataValue = true;
                     state.Current.ShouldHandleReference = true;
-                }
-                else if (meta == MetadataPropertyName.Values)
-                {
-                    throw new JsonException("Dictionaries cannot contain $values.");
-                }
-                else
-                {
-                    if (state.Current.IsProcessingProperty(ClassType.Dictionary))
-                    {
-                        SetDictionaryCandidateAsValue(ref state);
-                    }
                 }
 
                 state.Current.KeyName = reader.GetString();
@@ -178,131 +164,122 @@ namespace System.Text.Json
                 state.Current.EndProperty();
 
                 ReadOnlySpan<byte> propertyName = reader.HasValueSequence ? reader.ValueSequence.ToArray() : reader.ValueSpan;
-                if (reader._stringHasEscaping)
-                {
-                    int idx = propertyName.IndexOf(JsonConstants.BackSlash);
-                    Debug.Assert(idx != -1);
-                    propertyName = GetUnescapedString(propertyName, idx);
-                }
-
-                MetadataPropertyName meta = GetMetadataPropertyName(propertyName);
+                MetadataPropertyName meta = GetMetadataPropertyName(propertyName, ref state, ref reader);
                 state.Current.MetadataProperty = meta;
 
-                if (meta != MetadataPropertyName.NoMetadata)
+                if (meta == MetadataPropertyName.NoMetadata)
                 {
-                    JsonPropertyInfo info;
-
-                    if (meta == MetadataPropertyName.Values)
+                    if (reader._stringHasEscaping)
                     {
-                        if (!state.Current.IsPreservedArray)
-                        {
-                            throw new JsonException("Objects cannot contain $values.");
-                        }
-
-                        info = state.Current.JsonClassInfo.PropertyCache["Values"]; //Well-known property.
-                        info.JsonPropertyName = propertyName.ToArray();
-                        info.IsMetadata = true;
-                        state.Current.JsonPropertyInfo = info;
-
-                        if (!state.Current.IsPreserved)
-                        {
-                            throw new JsonException("Preserved arrays canot lack an identifier.");
-                        }
-
-                        return;
+                        int idx = propertyName.IndexOf(JsonConstants.BackSlash);
+                        Debug.Assert(idx != -1);
+                        propertyName = GetUnescapedString(propertyName, idx);
                     }
-                    else if (meta == MetadataPropertyName.Id)
+
+                    JsonPropertyInfo jsonPropertyInfo = state.Current.JsonClassInfo.GetProperty(propertyName, ref state.Current);
+
+                    if (state.Current.IsPreservedArray)
                     {
-                        if (state.Current.PropertyIndex > 0 || state.Current.IsPreserved || state.Current.ShouldHandleReference)
-                        {
-                            throw new JsonException("$id must be the first property in the object graph.");
-                        }
-
-                        info = JsonPropertyInfo.s_metadataProperty;
-                        info.JsonPropertyName = propertyName.ToArray();
-                        state.Current.JsonPropertyInfo = info;
-                        state.Current.ReadMetadataValue = true;
-
-                        SetAsPreserved(ref state.Current);
-
-                        return;
+                        jsonPropertyInfo.JsonPropertyName = propertyName.ToArray();
+                        state.Current.JsonPropertyInfo = jsonPropertyInfo;
+                        throw new JsonException(
+                            "Deserializaiton failed for one of these reasons:\n" +
+                                "1. Invalid property in preserved array.\n" +
+                                "2. " + SR.Format(SR.DeserializeUnableToConvertValue, state.Current.JsonClassInfo.PropertyCache["Values"].DeclaredPropertyType));
                     }
-                    else if (meta == MetadataPropertyName.Ref)
+
+                    if (jsonPropertyInfo == JsonPropertyInfo.s_missingProperty)
                     {
-                        if (state.Current.PropertyIndex > 0 || state.Current.IsPreserved || state.Current.ShouldHandleReference)
+                        JsonPropertyInfo dataExtProperty = state.Current.JsonClassInfo.DataExtensionProperty;
+                        if (dataExtProperty == null)
                         {
-                            throw new JsonException("Reference objects cannot contain other properties.");
-                        }
-
-                        if (state.Current.JsonClassInfo.Type.IsValueType)
-                        {
-                            throw new JsonException("Reference objects to value types are not allowed.");
-                        }
-
-                        info = JsonPropertyInfo.s_metadataProperty;
-                        info.JsonPropertyName = propertyName.ToArray();
-                        state.Current.JsonPropertyInfo = info;
-                        state.Current.ReadMetadataValue = true;
-                        state.Current.ShouldHandleReference = true;
-
-                        return;
-                    }
-                    else //Unknown
-                    {
-                        if (state.Current.IsPreservedArray)
-                        {
-                            throw new JsonException("Properties starting with '$' are not allowed in preserved arrays.");
-                        }
-                    }
-                }
-
-                JsonPropertyInfo jsonPropertyInfo = state.Current.JsonClassInfo.GetProperty(propertyName, ref state.Current);
-                if (jsonPropertyInfo == JsonPropertyInfo.s_missingProperty)
-                {
-                    JsonPropertyInfo dataExtProperty = state.Current.JsonClassInfo.DataExtensionProperty;
-                    if (dataExtProperty == null)
-                    {
-                        state.Current.JsonPropertyInfo = JsonPropertyInfo.s_missingProperty;
-                    }
-                    else
-                    {
-                        state.Current.JsonPropertyInfo = dataExtProperty;
-                        state.Current.JsonPropertyName = propertyName.ToArray();
-                        state.Current.KeyName = JsonHelpers.Utf8GetString(propertyName);
-                        state.Current.CollectionPropertyInitialized = true;
-
-                        CreateDataExtensionProperty(dataExtProperty, ref state);
-                    }
-                }
-                else
-                {
-                    // Support JsonException.Path.
-                    Debug.Assert(
-                        jsonPropertyInfo.JsonPropertyName == null ||
-                        options.PropertyNameCaseInsensitive ||
-                        propertyName.SequenceEqual(jsonPropertyInfo.JsonPropertyName));
-
-                    state.Current.JsonPropertyInfo = jsonPropertyInfo;
-
-                    if (jsonPropertyInfo.JsonPropertyName == null)
-                    {
-                        byte[] propertyNameArray = propertyName.ToArray();
-                        if (options.PropertyNameCaseInsensitive)
-                        {
-                            // Each payload can have a different name here; remember the value on the temporary stack.
-                            state.Current.JsonPropertyName = propertyNameArray;
+                            state.Current.JsonPropertyInfo = JsonPropertyInfo.s_missingProperty;
                         }
                         else
                         {
-                            // Prevent future allocs by caching globally on the JsonPropertyInfo which is specific to a Type+PropertyName
-                            // so it will match the incoming payload except when case insensitivity is enabled (which is handled above).
-                            state.Current.JsonPropertyInfo.JsonPropertyName = propertyNameArray;
+                            state.Current.JsonPropertyInfo = dataExtProperty;
+                            state.Current.JsonPropertyName = propertyName.ToArray();
+                            state.Current.KeyName = JsonHelpers.Utf8GetString(propertyName);
+                            state.Current.CollectionPropertyInitialized = true;
+
+                            CreateDataExtensionProperty(dataExtProperty, ref state);
                         }
                     }
-                }
+                    else
+                    {
+                        // Support JsonException.Path.
+                        Debug.Assert(
+                            jsonPropertyInfo.JsonPropertyName == null ||
+                            options.PropertyNameCaseInsensitive ||
+                            propertyName.SequenceEqual(jsonPropertyInfo.JsonPropertyName));
 
-                // Increment the PropertyIndex so JsonClassInfo.GetProperty() starts with the next property.
-                state.Current.PropertyIndex++;
+                        state.Current.JsonPropertyInfo = jsonPropertyInfo;
+
+                        if (jsonPropertyInfo.JsonPropertyName == null)
+                        {
+                            byte[] propertyNameArray = propertyName.ToArray();
+                            if (options.PropertyNameCaseInsensitive)
+                            {
+                                // Each payload can have a different name here; remember the value on the temporary stack.
+                                state.Current.JsonPropertyName = propertyNameArray;
+                            }
+                            else
+                            {
+                                // Prevent future allocs by caching globally on the JsonPropertyInfo which is specific to a Type+PropertyName
+                                // so it will match the incoming payload except when case insensitivity is enabled (which is handled above).
+                                state.Current.JsonPropertyInfo.JsonPropertyName = propertyNameArray;
+                            }
+                        }
+                    }
+
+                    // Increment the PropertyIndex so JsonClassInfo.GetProperty() starts with the next property.
+                    state.Current.PropertyIndex++;
+                }
+                else if (meta == MetadataPropertyName.Id)
+                {
+                    if (state.Current.PropertyIndex > 0 || state.Current.IsPreserved || state.Current.ShouldHandleReference)
+                    {
+                        throw new JsonException("The identifier must be the first property in the JSON object.");
+                    }
+
+                    JsonPropertyInfo info = JsonPropertyInfo.s_metadataProperty;
+                    info.JsonPropertyName = propertyName.ToArray();
+                    state.Current.JsonPropertyInfo = info;
+
+                    state.Current.ReadMetadataValue = true;
+                    SetAsPreserved(ref state.Current);
+                }
+                else if (meta == MetadataPropertyName.Values)
+                {
+                    JsonPropertyInfo info = state.Current.JsonClassInfo.PropertyCache["Values"]; //Well-known property.
+                    info.JsonPropertyName = propertyName.ToArray();
+                    info.IsMetadata = true;
+                    state.Current.JsonPropertyInfo = info;
+
+                    if (!state.Current.IsPreserved)
+                    {
+                        throw new JsonException("Preserved arrays canot lack an identifier.");
+                    }
+                }
+                else //$ref case
+                {
+                    if (state.Current.JsonClassInfo.Type.IsValueType)
+                    {
+                        throw new JsonException("Reference objects to value types are not allowed.");
+                    }
+
+                    if (state.Current.PropertyIndex > 0 || state.Current.IsPreserved || state.Current.ShouldHandleReference)
+                    {
+                        throw new JsonException("Reference objects cannot contain other properties.");
+                    }
+
+                    JsonPropertyInfo info = JsonPropertyInfo.s_metadataProperty;
+                    info.JsonPropertyName = propertyName.ToArray();
+                    state.Current.JsonPropertyInfo = info;
+
+                    state.Current.ReadMetadataValue = true;
+                    state.Current.ShouldHandleReference = true;
+                }
             }
         }
 

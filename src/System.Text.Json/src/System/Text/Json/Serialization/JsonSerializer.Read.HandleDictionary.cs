@@ -148,9 +148,7 @@ namespace System.Text.Json
 
                 if (state.Current.ReturnValue != null)
                 {
-                    // Special case: If the dictionary is a reference and the reference does not exist, avoid setting the value directly to ReturnValue in order to not write it when JsonIgnoreNull is set.
-                    // In other words; delay setting the value.
-                    state.Current.DictionaryCandidate = value;
+                    state.Current.JsonPropertyInfo.SetValueAsObject(state.Current.ReturnValue, value);
                 }
                 else
                 {

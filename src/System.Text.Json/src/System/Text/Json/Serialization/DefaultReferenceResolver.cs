@@ -47,11 +47,13 @@ namespace System.Text.Json
 
         public override object ResolveReference(string key)
         {
-            if (_preservedReferences == null)
+            object value = null;
+            _preservedReferences?.TryGetByKey(key, out value);
+
+            if (value == null)
             {
-                return null;
+                throw new JsonException("Reference not found.");
             }
-            _preservedReferences.TryGetByKey(key, out object value);
 
             return value;
         }

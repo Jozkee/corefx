@@ -3,7 +3,6 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Diagnostics;
-using System.Text.Json.Serialization;
 
 namespace System.Text.Json
 {
@@ -106,15 +105,9 @@ namespace System.Text.Json
                     // Is property.
                     if (state.Current.IsProcessingProperty(ClassType.Enumerable))
                     {
-                        if (state.Current.JsonPropertyInfo.IsMetadata)
-                        {
-                            throw new JsonException("The property is already part of a preserved array object, cannot be read as a preserved array.");
-                        }
-
                         Type preservedObjType = typeof(JsonPreservedReference<>).MakeGenericType(state.Current.JsonPropertyInfo.RuntimePropertyType); // is this the right property?
                         state.Push();
                         state.Current.Initialize(preservedObjType, options);
-
                     }
                     // Is root.
                     else
@@ -212,15 +205,17 @@ namespace System.Text.Json
             }
 
             object value;
-            // If we are returing a preserved array.
-            if (state.Current.IsPreservedArray && state.Current.ReturnValue != null)
+            if (state.Current.IsPreservedArray)
             {
-                Type referenceType = state.Current.ReturnValue.GetType();
-                value = referenceType.GetProperty("Values").GetValue(state.Current.ReturnValue);
+                JsonPropertyInfo info = state.Current.JsonClassInfo.PropertyCache["Values"]; //Well-known property.
+                value = info.GetValueAsObject(state.Current.ReturnValue);
 
                 if (value == null)
                 {
-                    throw new JsonException("Preserved array $values property was not present or its value is not an array.");
+                    throw new JsonException(
+                            "Deserializaiton failed for one of these reasons:\n" +
+                                "1. $values property was not present in preserved array.\n" +
+                                "2. " + SR.Format(SR.DeserializeUnableToConvertValue, info.DeclaredPropertyType));
                 }
             }
             else

@@ -43,6 +43,18 @@ namespace System.Text.Json
 
                     JsonTokenType tokenType = reader.TokenType;
 
+                    if (readStack.Current.MetadataProperty == MetadataPropertyName.Values)
+                    {
+                        if (tokenType != JsonTokenType.StartArray)
+                        {
+                            throw new JsonException("Invalid array for $values property.");
+                        }
+                        else
+                        {
+                            readStack.Current.MetadataProperty = MetadataPropertyName.NoMetadata;
+                        }
+                    }
+
                     if (JsonHelpers.IsInRangeInclusive(tokenType, JsonTokenType.String, JsonTokenType.False))
                     {
                         Debug.Assert(tokenType == JsonTokenType.String || tokenType == JsonTokenType.Number || tokenType == JsonTokenType.True || tokenType == JsonTokenType.False);

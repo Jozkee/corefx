@@ -33,7 +33,7 @@ namespace System.Text.Json
             return state.Current.IsProcessingProperty(ClassType.Dictionary) ? state.Current.JsonPropertyInfo.GetValueAsObject(state.Current.ReturnValue) : state.Current.ReturnValue;
         }
 
-        internal static MetadataPropertyName GetMetadataPropertyName(ReadOnlySpan<byte> propertyName)
+        internal static MetadataPropertyName GetMetadataPropertyName(ReadOnlySpan<byte> propertyName, ref ReadStack state, ref Utf8JsonReader reader)
         {
             if (propertyName[0] == '$')
             {
@@ -57,7 +57,9 @@ namespace System.Text.Json
                         break;
 
                     case 7:
-                        if (propertyName[1] == 'v' &&
+                        // Only Preserved Arrays are allowed to read $values as metadata.
+                        if (state.Current.IsPreservedArray &&
+                            propertyName[1] == 'v' &&
                             propertyName[2] == 'a' &&
                             propertyName[3] == 'l' &&
                             propertyName[4] == 'u' &&
@@ -69,7 +71,20 @@ namespace System.Text.Json
                         break;
                 }
 
-                return MetadataPropertyName.Unknonwn;
+                // Fail state.
+                // Set PropertyInfo or KeyName to write down the conflicting property name in JsonException.Path
+                if (!state.Current.IsProcessingDictionary())
+                {
+                    JsonPropertyInfo info = JsonPropertyInfo.s_metadataProperty;
+                    info.JsonPropertyName = propertyName.ToArray();
+                    state.Current.JsonPropertyInfo = info;
+                }
+                else
+                {
+                    state.Current.KeyName = reader.GetString();
+                }
+
+                throw new JsonException("Properties that start with '$' are not allowed on preserve mode, you must either escape '$' or turn off preserve references.");
             }
 
             return MetadataPropertyName.NoMetadata;
@@ -116,7 +131,6 @@ namespace System.Text.Json
     internal enum MetadataPropertyName
     {
         NoMetadata,
-        Unknonwn,
         Values,
         Id,
         Ref,
