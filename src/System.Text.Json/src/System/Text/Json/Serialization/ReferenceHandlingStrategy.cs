@@ -17,6 +17,15 @@ namespace System.Text.Json
     {
         internal static ResolvedReferenceHandling PreserveReferencesStrategy(ref WriteStack state, out string referenceId, out bool skip, object value)
         {
+            // Avoid emitting metadata to value types.
+            Type currentType = state.Current.JsonPropertyInfo?.DeclaredPropertyType ?? state.Current.JsonClassInfo.Type;
+            if (currentType.IsValueType)
+            {
+                referenceId = null;
+                skip = false;
+                return ResolvedReferenceHandling.None;
+            }
+
             if (skip = state.GetPreservedReference(value, out referenceId))
             {
                 return ResolvedReferenceHandling.IsReference;

@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 using System.Collections.Generic;
+using System.Collections.Immutable;
 using System.Text.Json.Serialization;
 using Newtonsoft.Json;
 using Xunit;
@@ -399,16 +400,53 @@ namespace System.Text.Json.Tests
         private struct EmployeeStruct
         {
             public string Name { get; set; }
+            public JobStruct Job { get; set; }
+            public ImmutableArray<RoleStruct> Roles { get; set; }
+        }
+
+        private struct JobStruct
+        {
+            public string Title { get; set; }
+        }
+
+        private struct RoleStruct
+        {
+            public string Description { get; set; }
         }
 
         [Fact]
-        public static void PreserveStruct()
+        public static void ValueTypesShouldNotContainId()
         {
-            EmployeeStruct elem = new EmployeeStruct { Name = "Angela" };
-            List<EmployeeStruct> root = new List<EmployeeStruct> { elem, elem };
+            //Struct as root.
+            EmployeeStruct employee = new EmployeeStruct
+            {
+                Name = "Angela",
+                //Struct as property.
+                Job = new JobStruct
+                {
+                    Title = "Software Engineer"
+                },
+                //ImmutableArray<T> as property.
+                Roles =
+                    ImmutableArray.Create(
+                        new RoleStruct
+                        {
+                            Description = "Contributor"
+                        },
+                        new RoleStruct
+                        {
+                            Description = "Infrastructure"
+                        })
+            };
 
-            string expected = JsonConvert.SerializeObject(root, JsonNetSettings(TestReferenceHandling.Preserve));
-            string actual = JsonSerializer.Serialize(root, SystemTextJsonOptions(TestReferenceHandling.Preserve));
+            //ImmutableArray<T> as root.
+            ImmutableArray<EmployeeStruct> array =
+                //Struct as array element (same as struct root).
+                ImmutableArray.Create(employee);
+
+            // Regardless of using preserve, do not emit $id to value types; that is why we compare against default.
+            string actual = JsonSerializer.Serialize(array, SystemTextJsonOptions(TestReferenceHandling.Preserve));
+            string expected = JsonSerializer.Serialize(array, SystemTextJsonOptions(TestReferenceHandling.Default));
 
             Assert.Equal(expected, actual);
         }
