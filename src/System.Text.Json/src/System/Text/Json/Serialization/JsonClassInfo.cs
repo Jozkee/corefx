@@ -156,15 +156,6 @@ namespace System.Text.Json
                                 JsonPropertyInfo jsonPropertyInfo = AddProperty(propertyInfo.PropertyType, propertyInfo, type, options);
                                 Debug.Assert(jsonPropertyInfo != null);
 
-                                if ((options.ReferenceHandling.PreserveHandlingOnSerialize |
-                                    options.ReferenceHandling.PreserveHandlingOnDeserialize) != PreserveReferencesHandling.None)
-                                {
-                                    if (jsonPropertyInfo.Name[0] == '$')
-                                    {
-                                        throw new JsonException("Property names cannot contain '$' when preserve references is enable.");
-                                    }
-                                }
-
                                 // If the JsonPropertyNameAttribute or naming policy results in collisions, throw an exception.
                                 if (!JsonHelpers.TryAdd(cache, jsonPropertyInfo.NameAsString, jsonPropertyInfo))
                                 {

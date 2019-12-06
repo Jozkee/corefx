@@ -441,7 +441,7 @@ namespace System.Text.Json.Tests
 
             //ImmutableArray<T> as root.
             ImmutableArray<EmployeeStruct> array =
-                //Struct as array element (same as struct root).
+                //Struct as array element (same as struct being root).
                 ImmutableArray.Create(employee);
 
             // Regardless of using preserve, do not emit $id to value types; that is why we compare against default.
@@ -452,14 +452,41 @@ namespace System.Text.Json.Tests
         }
         #endregion struct tests
 
-        #region JsonPropertyInfo overlaps with metadata
-        [Fact]
-        public static void PropertyNameOverlapsOnSerialize()
+        #region Encode JSON property with leading '$'
+        private class MyPoco
         {
-            var root = new EmployeeAnnotated();
+            public string Hello { get; set; }
 
-            JsonException ex = Assert.Throws<JsonException>(() => JsonSerializer.Serialize(root, SystemTextJsonOptions(TestReferenceHandling.Preserve)));
-            Assert.Equal("Property names cannot contain '$' when preserve references is enable.", ex.Message);
+            [Serialization.JsonExtensionData]
+            public Dictionary<string, object> ExtensionData { get; set; }
+        }
+
+        [Fact]
+        [ActiveIssue("Not yet created")]
+        public static void DictionaryKeyContainingLeadingDollarSignShouldBeEncoded()
+        {
+            //$ Key in dictionary holding primitive type.
+            Dictionary<string, object> dictionary = new Dictionary<string, object>();
+            dictionary["$string"] = "Hello world";
+            string json = JsonSerializer.Serialize(dictionary, SystemTextJsonOptions(TestReferenceHandling.Preserve));
+            Assert.Equal(@"{""$id"":""1"",""\u0024string"":""Hello world""}", json);
+
+            //$ Key in dictionary holding complex type.
+            dictionary = new Dictionary<string, object>();
+            dictionary["$object"] = new MyPoco { Hello = "World" };
+            json = JsonSerializer.Serialize(dictionary, SystemTextJsonOptions(TestReferenceHandling.Preserve));
+            Assert.Equal(@"{""$id"":""1"",""\u0024object"":{""$id"":""2"",""Hello"":""World""}}", json);
+
+            //$ Key in ExtensionData dictionary
+            MyPoco poco = new MyPoco();
+            poco.ExtensionData["$string"] = "Hello world";
+            poco.ExtensionData["$object"] = new MyPoco { Hello = "World" };
+            json = JsonSerializer.Serialize(poco, SystemTextJsonOptions(TestReferenceHandling.Preserve));
+            Assert.Equal(@"{""$id"":""1"",""\u0024string"":""Hello world"",""\u0024object"":{""$id"":""2"",""Hello"":""World""}}", json);
+
+            //TODO:
+            //Extend the scenarios to also cover CLR and F# properties with a leading $.
+            //Also add scenarios where a NamingPolicy (DictionaryKey or Property) appends the leading $.
         }
         #endregion
 
