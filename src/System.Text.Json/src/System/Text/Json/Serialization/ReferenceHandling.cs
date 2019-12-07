@@ -18,11 +18,6 @@ namespace System.Text.Json.Serialization
         /// </summary>
         public static ReferenceHandling Preserve => new ReferenceHandling(PreserveReferencesHandling.All);
 
-        /// <summary>
-        /// Instances that show circularity will not be written.
-        /// </summary>
-        public static ReferenceHandling Ignore => new ReferenceHandling(PreserveReferencesHandling.None, PreserveReferencesHandling.None, ReferenceLoopHandling.Ignore);
-
         // For future, change to public if needed.
         internal PreserveReferencesHandling PreserveHandlingOnSerialize => _preserveHandlingOnSerialize;
         internal PreserveReferencesHandling PreserveHandlingOnDeserialize => _preserveHandlingOnDeserialize;
@@ -50,8 +45,6 @@ namespace System.Text.Json.Serialization
     internal enum ReferenceLoopHandling
     {
         Error = 0,
-        // For future if requested by the community.
-        Ignore = 1,
     }
 
 
@@ -68,9 +61,5 @@ namespace System.Text.Json.Serialization
         /// Preserved objects and arrays will be written/readen.
         /// </summary>
         All = 1,
-
-        // For future if requested by the community.
-        // Objects = 2,
-        // Arrays = 3,
     }
 }

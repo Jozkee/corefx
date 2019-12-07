@@ -14,16 +14,13 @@ namespace System.Text.Json.Tests
         public enum TestReferenceHandling
         {
             Default,
-            Ignore,
             Preserve
         }
 
         private static JsonSerializerOptions _serializeOptionsError = new JsonSerializerOptions { ReferenceHandling = ReferenceHandling.Default };
-        private static JsonSerializerOptions _serializeOptionsIgnore = new JsonSerializerOptions { ReferenceHandling = ReferenceHandling.Ignore };
         private static JsonSerializerOptions _serializeOptionsPreserve = new JsonSerializerOptions { ReferenceHandling = ReferenceHandling.Preserve };
 
         private static JsonSerializerSettings _newtonsoftSerializeOptionsError = new JsonSerializerSettings { ReferenceLoopHandling = ReferenceLoopHandling.Error};
-        private static JsonSerializerSettings _newtonsoftSerializeOptionsIgnore = new JsonSerializerSettings { ReferenceLoopHandling = ReferenceLoopHandling.Ignore };
         private static JsonSerializerSettings _newtonsoftSerializeOptionsPreserve = new JsonSerializerSettings { PreserveReferencesHandling = PreserveReferencesHandling.All, ReferenceLoopHandling = ReferenceLoopHandling.Serialize };
 
         private class Employee
@@ -57,8 +54,7 @@ namespace System.Text.Json.Tests
         }
 
         #region Root Object
-        [Theory]
-        [InlineData(TestReferenceHandling.Ignore)]
+        [Theory]
         [InlineData(TestReferenceHandling.Preserve)]
         public static void ObjectLoop(TestReferenceHandling referenceHandling)
         {
@@ -71,8 +67,7 @@ namespace System.Text.Json.Tests
             Assert.Equal(expected, actual);
         }
 
-        [Theory]
-        [InlineData(TestReferenceHandling.Ignore)]
+        [Theory]
         [InlineData(TestReferenceHandling.Preserve)]
         public static void ObjectArrayLoop(TestReferenceHandling referenceHandling)
         {
@@ -85,8 +80,7 @@ namespace System.Text.Json.Tests
             Assert.Equal(expected, actual);
         }
 
-        [Theory]
-        [InlineData(TestReferenceHandling.Ignore)]
+        [Theory]
         [InlineData(TestReferenceHandling.Preserve)]
         public static void ObjectDictionaryLoop(TestReferenceHandling referenceHandling)
         {
@@ -143,8 +137,7 @@ namespace System.Text.Json.Tests
             Assert.Equal(expected, actual);
         }
 
-        [Theory]
-        [InlineData(TestReferenceHandling.Ignore)]
+        [Theory]
         [InlineData(TestReferenceHandling.Preserve)]
         //Check objects are correctly added/removed from the Hashset.
         public static void ObjectFoundTwiceOnSameDepth(TestReferenceHandling handling)
@@ -170,8 +163,7 @@ namespace System.Text.Json.Tests
         #region Root Dictionary
         private class MyDictionary : Dictionary<string, MyDictionary> { }
 
-        [Theory]
-        [InlineData(TestReferenceHandling.Ignore)]
+        [Theory]
         [InlineData(TestReferenceHandling.Preserve)]
         public static void DictionaryLoop(TestReferenceHandling handling)
         {
@@ -185,8 +177,7 @@ namespace System.Text.Json.Tests
             Assert.Equal(expected, actual);
         }
 
-        [Theory]
-        [InlineData(TestReferenceHandling.Ignore)]
+        [Theory]
         [InlineData(TestReferenceHandling.Preserve)]
         public static void DictionaryObjectLoop(TestReferenceHandling referenceHandling)
         {
@@ -201,8 +192,7 @@ namespace System.Text.Json.Tests
 
         private class MyDictionaryArrayValues : Dictionary<string, List<MyDictionaryArrayValues>> { }
 
-        [Theory]
-        [InlineData(TestReferenceHandling.Ignore)]
+        [Theory]
         [InlineData(TestReferenceHandling.Preserve)]
         public static void DictionaryArrayLoop(TestReferenceHandling referenceHandling)
         {
@@ -253,29 +243,12 @@ namespace System.Text.Json.Tests
 
             Assert.Equal(expected, actual);
         }
-
-        [Fact]
-        public static void DictionaryNTimesUsingIgnore()
-        {
-            Dictionary<string, Employee> root = new Dictionary<string, Employee>();
-            Employee elem = new Employee();
-            elem.Contacts = root;
-            elem.Contacts2 = root;
-
-            root["angela"] = elem;
-
-            string expected = JsonConvert.SerializeObject(root, JsonNetSettings(TestReferenceHandling.Ignore));
-            string actual = JsonSerializer.Serialize(root, SystemTextJsonOptions(TestReferenceHandling.Ignore));
-
-            Assert.Equal(expected, actual);
-        }
         #endregion
 
         #region Root Array
         private class MyList : List<MyList> { }
 
-        [Theory]
-        [InlineData(TestReferenceHandling.Ignore)]
+        [Theory]
         [InlineData(TestReferenceHandling.Preserve)]
         public static void ArrayLoop(TestReferenceHandling referenceHandling)
         {
@@ -288,8 +261,7 @@ namespace System.Text.Json.Tests
             Assert.Equal(expected, actual);
         }
 
-        [Theory]
-        [InlineData(TestReferenceHandling.Ignore)]
+        [Theory]
         [InlineData(TestReferenceHandling.Preserve)]
         public static void ArrayObjectLoop(TestReferenceHandling referenceHandling)
         {
@@ -304,8 +276,7 @@ namespace System.Text.Json.Tests
 
         private class MyListDictionaryValues : List<Dictionary<string, MyListDictionaryValues>> { }
 
-        [Theory]
-        [InlineData(TestReferenceHandling.Ignore)]
+        [Theory]
         [InlineData(TestReferenceHandling.Preserve)]
         public static void ArrayDictionaryLoop(TestReferenceHandling referenceHandling)
         {
@@ -354,43 +325,6 @@ namespace System.Text.Json.Tests
 
             string expected = JsonConvert.SerializeObject(root, JsonNetSettings(TestReferenceHandling.Preserve));
             string actual = JsonSerializer.Serialize(root, SystemTextJsonOptions(TestReferenceHandling.Preserve));
-
-            Assert.Equal(expected, actual);
-        }
-
-        [Fact]//Check objects are correctly added/removed from the Hashset.
-        public static void ObjectUnevenTimesUsingIgnore()
-        {
-            List<Employee> employees = new List<Employee>();
-
-            Employee angela = new Employee();
-            Employee bob = new Employee();
-
-            bob.Manager = angela;
-            angela.Manager = angela;
-
-            employees.Add(bob);
-            employees.Add(bob);
-            employees.Add(bob);
-
-            string expected = JsonConvert.SerializeObject(employees, JsonNetSettings(TestReferenceHandling.Ignore));
-            string actual = JsonSerializer.Serialize(employees, SystemTextJsonOptions(TestReferenceHandling.Ignore));
-
-            Assert.Equal(expected, actual);
-        }
-
-        [Fact]
-        public static void ArrayNTimesUsingIgnore()
-        {
-            List<Employee> root = new List<Employee>();
-            Employee elem = new Employee();
-            elem.Subordinates = root;
-            elem.Subordinates2 = root;
-
-            root.Add(elem);
-
-            string expected = JsonConvert.SerializeObject(root, JsonNetSettings(TestReferenceHandling.Ignore));
-            string actual = JsonSerializer.Serialize(root, SystemTextJsonOptions(TestReferenceHandling.Ignore));
 
             Assert.Equal(expected, actual);
         }
@@ -496,8 +430,6 @@ namespace System.Text.Json.Tests
             switch(referenceHandling){
                 case TestReferenceHandling.Default:
                     return _newtonsoftSerializeOptionsError;
-                case TestReferenceHandling.Ignore:
-                    return _newtonsoftSerializeOptionsIgnore;
                 case TestReferenceHandling.Preserve:
                     return _newtonsoftSerializeOptionsPreserve;
             }
@@ -511,8 +443,6 @@ namespace System.Text.Json.Tests
             {
                 case TestReferenceHandling.Default:
                     return _serializeOptionsError;
-                case TestReferenceHandling.Ignore:
-                    return _serializeOptionsIgnore;
                 case TestReferenceHandling.Preserve:
                     return _serializeOptionsPreserve;
             }
