@@ -253,7 +253,6 @@ namespace System.Text.Json
                 {
                     JsonPropertyInfo info = state.Current.JsonClassInfo.PropertyCache["Values"]; //Well-known property.
                     info.JsonPropertyName = propertyName.ToArray();
-                    info.IsMetadata = true;
                     state.Current.JsonPropertyInfo = info;
 
                     if (!state.Current.IsPreserved)

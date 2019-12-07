@@ -46,7 +46,6 @@ namespace System.Text.Json
         {
             JsonPropertyInfo info = new JsonPropertyInfoNotNullable<object, object, object, object>();
             info.ShouldDeserialize = true;
-            info.IsMetadata = true;
 
             return info;
         }
@@ -341,8 +340,6 @@ namespace System.Text.Json
         public bool IgnoreNullValues { get; private set; }
 
         public bool IsPropertyPolicy { get; protected set; }
-
-        public bool IsMetadata { get; set; }
 
         // The name from a Json value. This is cached for performance on first deserialize.
         public byte[] JsonPropertyName { get; set; }

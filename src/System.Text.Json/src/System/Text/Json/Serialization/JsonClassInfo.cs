@@ -345,7 +345,7 @@ namespace System.Text.Json
             // 1) info == s_missingProperty. Property not found.
             // 2) key == info.PropertyNameKey. Exact match found.
             // 3) key != info.PropertyNameKey. Match found due to case insensitivity.
-            Debug.Assert(info == JsonPropertyInfo.s_missingProperty || key == info.PropertyNameKey || Options.PropertyNameCaseInsensitive || info.IsMetadata);
+            Debug.Assert(info == JsonPropertyInfo.s_missingProperty || key == info.PropertyNameKey || Options.PropertyNameCaseInsensitive);
 
             // Check if we should add this to the cache.
             // Only cache up to a threshold length and then just use the dictionary when an item is not found in the cache.
