@@ -956,7 +956,7 @@ namespace System.Text.Json.Tests
         #endregion
 
         #region Preserved objects ($id)
-        [Fact(Skip = "No longer apply - overlaps with the Exception '$id must be the first property in the object graph.'")]
+        [Fact]
         public static void MoreThanOneId()
         {
             string json = @"{
@@ -970,8 +970,8 @@ namespace System.Text.Json.Tests
 
             JsonException ex = Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<Employee>(json, _deserializeOptions));
 
-            Assert.Equal("$.$id", ex.Path);
-            Assert.Equal("Object already defines a reference identifier.", ex.Message);
+            Assert.Equal("$", ex.Path);
+            Assert.Equal("The identifier must be the first property in the JSON object.", ex.Message);
         }
 
         [Fact]
@@ -1201,34 +1201,6 @@ namespace System.Text.Json.Tests
 
             ex = Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<List<string>>(json, _deserializeOptions));
             Assert.Equal("Properties that start with '$' are not allowed on preserve mode, you must either escape '$' or turn off preserve references.", ex.Message);
-        }
-        #endregion
-
-        #region JsonPropertyInfo overlaps with metadata
-        // TODO: Add also similar tests on Serialize.
-        private class EmployeeAnnotated
-        {
-            [JsonPropertyName("$id")]
-            public string Identifier { get; set; }
-            [JsonPropertyName("$ref")]
-            public string Reference { get; set; }
-            [JsonPropertyName("$values")]
-            public List<EmployeeAnnotated> Values { get; set; }
-
-            public string Name { get; set; }
-        }
-
-        [Fact]
-        public static void MetadataPropertyOverlapsOnDeserialize()
-        {
-            // payload does not reallly matter since the validation occurs during warm-up.
-            string json = @"{
-                ""$id"": ""1"",
-                ""Name"": ""Angela""
-            }";
-
-            JsonException ex = Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<EmployeeAnnotated>(json, _deserializeOptions));
-            Assert.Equal("Property names cannot contain '$' when preserve references is enable.", ex.Message);
         }
         #endregion
         #endregion
